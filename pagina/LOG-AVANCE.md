@@ -12,6 +12,13 @@ Cada ciclo del autoloop agrega una línea acá. Formato: `[fecha ART] zona/famil
 - Cobertura sembrada: 18 celdas (zona × familia) en estado `pending`.
 - Nota honesta: WhatsApp de varios leads quedó vacío (R1) — el autoloop lo enriquece por ciclo.
 
+## Cambio de estrategia (2026-07-05) — cazador local GRATIS
+- Autoloop de Claude **apagado** (gastaba créditos). Reemplazado por `leadhunter/hunter.py`:
+  script Python que caza con fuentes gratis (Overpass/OSM + DuckDuckGo), aplica el método
+  determinista del spec y sube a Supabase vía RPC con secreto. **Corre sin gastar créditos.**
+- Reparto: el script hace el 90% (buscar/scorear/subir); Claude solo afina los TAKE (barato).
+- Probado OK: Once trajo 46 locales OSM → 8 procesados/insertados; cadenas (Frávega, Megatone) → SKIP.
+
 ## Ciclos autónomos
 <!-- el autoloop escribe debajo -->
 - [2026-07-05 ~03:35 ART] caba-once/celulares · +2 leads (0 TAKE / 2 WAIT / 0 SKIP / 0 MANUAL) · pendientes: 17. Nota: Once/celulares por WebSearch trae negocios con web propia establecida (OnCelular, Celulares Pueyrredón) → WAIT. Los fantasma TAKE requieren ángulo Maps/IG (403). Ciclo de prueba manual end-to-end OK.

@@ -1,2 +1,6 @@
 pagina/.vercel/
 pagina/.env.local
+leadhunter/config.py
+leadhunter/__pycache__/
+**/__pycache__/
+*.pyc
