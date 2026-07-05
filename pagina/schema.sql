@@ -19,6 +19,7 @@ create table if not exists public.atrio_leads_electro (
   producto_sugerido text, gancho text, mensaje_whatsapp text,
   confianza_global text, fuentes jsonb default '[]'::jsonb,
   contactado boolean not null default false, contactado_at timestamptz, notas text,
+  email_asunto text, email_cuerpo text,   -- mensaje de mail sugerido (para los TAKE)
   dedup_key text generated always as (lower(regexp_replace(coalesce(name,''),'\s+',' ','g')) || '|' || lower(coalesce(city,''))) stored,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

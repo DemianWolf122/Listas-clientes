@@ -19,6 +19,15 @@ Cada ciclo del autoloop agrega una línea acá. Formato: `[fecha ART] zona/famil
 - Reparto: el script hace el 90% (buscar/scorear/subir); Claude solo afina los TAKE (barato).
 - Probado OK: Once trajo 46 locales OSM → 8 procesados/insertados; cadenas (Frávega, Megatone) → SKIP.
 
+## Verificación Nivel 2 + página v2 (2026-07-05)
+- Barrido completo: ~498 leads en la base (Once + CABA + MDP).
+- **Verificados con web (16 mejores TAKE)**: 7 confirmados TAKE (Costantino, MX Computación, American Computers,
+  JFG, Solution Store, Dhaka-Cell, Tech Solutions); reclasificados: Selfie Store y Casio Shop → SKIP (cadena/oficial),
+  HTG/Salvacell/Toshimar → WAIT (web propia), PC King/Polo Cel/G&G/Julmar → MANUAL. Salvacell corrigió dirección (mudanza).
+- Mensajes de mail (asunto+cuerpo) cargados para los 7 TAKE.
+- **Página v2**: responsive (grilla adaptable), filtros rápidos (TAKE/Verificados/zona), orden, copiar mensajes
+  (WhatsApp/mail), detalle expandible, badge "verificado". Redeploy a Vercel.
+
 ## Ciclos autónomos
 <!-- el autoloop escribe debajo -->
 - [2026-07-05 ~03:35 ART] caba-once/celulares · +2 leads (0 TAKE / 2 WAIT / 0 SKIP / 0 MANUAL) · pendientes: 17. Nota: Once/celulares por WebSearch trae negocios con web propia establecida (OnCelular, Celulares Pueyrredón) → WAIT. Los fantasma TAKE requieren ángulo Maps/IG (403). Ciclo de prueba manual end-to-end OK.
