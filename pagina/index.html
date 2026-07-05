@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atrio · Leads Electrónica</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+<style>
+  :root{
+    --bg:#0f1420; --card:#182131; --card2:#1f2a3d; --line:#2a374d;
+    --txt:#e8eefc; --muted:#93a2bd; --accent:#5b8cff; --gold:#e5b567;
+    --take:#3ecf8e; --wait:#e5b567; --skip:#6b7688; --manual:#c98bff;
+    --wa:#25d366;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.45}
+  header{position:sticky;top:0;z-index:10;background:rgba(15,20,32,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 14px}
+  h1{margin:0 0 2px;font-size:18px;letter-spacing:.2px}
+  h1 span{color:var(--gold)}
+  .sub{color:var(--muted);font-size:12px;margin-bottom:10px}
+  .stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted)}
+  .chip b{color:var(--txt)}
+  input,select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  .filters{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+  .filters .full{grid-column:1/-1}
+  main{padding:12px 14px 40px;max-width:760px;margin:0 auto}
+  .count{color:var(--muted);font-size:12px;margin:4px 2px 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .card.done{opacity:.62}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .name{font-size:16px;font-weight:600;margin:0}
+  .meta{color:var(--muted);font-size:12px;margin-top:3px}
+  .verdict{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+  .v-TAKE{background:rgba(62,207,142,.15);color:var(--take)}
+  .v-WAIT{background:rgba(229,181,103,.15);color:var(--wait)}
+  .v-SKIP{background:rgba(107,118,136,.18);color:var(--skip)}
+  .v-MANUAL_REVIEW{background:rgba(201,139,255,.15);color:var(--manual)}
+  .desc{margin:9px 0;color:#c9d5ec;font-size:13.5px}
+  .tags{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+  .tag{background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--muted)}
+  .scores{display:flex;gap:14px;margin:8px 0;font-size:12px;color:var(--muted)}
+  .scores b{color:var(--txt);font-size:14px}
+  .reason{background:var(--card2);border-left:3px solid var(--line);padding:8px 10px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--muted);margin:8px 0}
+  .msg{background:#101a2c;border:1px dashed var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;color:#bccdec;margin:8px 0;white-space:pre-wrap}
+  .btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .btn{display:inline-flex;align-items:center;gap:5px;text-decoration:none;border-radius:9px;padding:8px 11px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card2);color:var(--txt)}
+  .btn.wa{background:var(--wa);color:#04240f;border-color:transparent}
+  .btn:active{transform:scale(.97)}
+  .done-row{display:flex;align-items:center;gap:9px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+  .done-row label{font-size:13px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+  .done-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--take)}
+  .notas{margin-top:9px}
+  .notas textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;font-size:12.5px;resize:vertical;min-height:38px;font-family:inherit}
+  .saved{color:var(--take);font-size:11px;margin-left:6px}
+  .empty{text-align:center;color:var(--muted);padding:40px 0}
+  .fuentes{font-size:11px;color:var(--muted);margin-top:8px}
+  @media(min-width:620px){.filters{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Atrio · <span>Leads Electrónica</span></h1>
+  <div class="sub">CABA + Mar del Plata · lectura en vivo desde Supabase</div>
+  <div class="stats" id="stats"></div>
+  <input id="q" class="full" placeholder="🔎 Buscar por nombre, zona, dirección, descripción…" />
+  <div class="filters">
+    <select id="f-zona"><option value="">Zona / barrio</option></select>
+    <select id="f-sub"><option value="">Sub-rubro</option></select>
+    <select id="f-web"><option value="">Estado web</option></select>
+    <select id="f-verdict"><option value="">Veredicto</option></select>
+    <select id="f-prod"><option value="">Producto</option></select>
+    <select id="f-cont">
+      <option value="">Contactado: todos</option>
+      <option value="no">Sin contactar</option>
+      <option value="si">Contactados</option>
+    </select>
+  </div>
+</header>
+<main>
+  <div class="count" id="count">Cargando…</div>
+  <div id="list"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wjxekfxyxrfvmsfbqvsj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_4Asc-X1Wrs2FI1QAvi7FuA_SuSXbCMJ";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let ALL = [];
+const el = id => document.getElementById(id);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function load(){
+  const {data,error} = await sb.from('atrio_leads_electro').select('*').order('final_score',{ascending:false});
+  if(error){ el('count').textContent='Error: '+error.message; return; }
+  ALL = data||[];
+  buildFilters(); renderStats(); render();
+}
+
+function uniq(key){ return [...new Set(ALL.map(l=>l[key]).filter(Boolean))].sort(); }
+function fillSel(id,vals){ const s=el(id); vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);}); }
+function buildFilters(){
+  fillSel('f-zona',uniq('zona_barrio')); fillSel('f-sub',uniq('sub_rubro'));
+  fillSel('f-web',uniq('website_status')); fillSel('f-verdict',uniq('verdict'));
+  fillSel('f-prod',uniq('producto_sugerido'));
+}
+function renderStats(){
+  const c=v=>ALL.filter(l=>l.verdict===v).length;
+  const cont=ALL.filter(l=>l.contactado).length;
+  el('stats').innerHTML =
+    `<span class="chip">Total <b>${ALL.length}</b></span>`+
+    `<span class="chip">TAKE <b>${c('TAKE')}</b></span>`+
+    `<span class="chip">WAIT <b>${c('WAIT')}</b></span>`+
+    `<span class="chip">REVIEW <b>${c('MANUAL_REVIEW')}</b></span>`+
+    `<span class="chip">Contactados <b>${cont}</b></span>`;
+}
+
+function matches(l){
+  const q=el('q').value.trim().toLowerCase();
+  if(q){ const hay=[l.name,l.zona_barrio,l.address,l.descripcion,l.sub_rubro,l.city].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+  const F=(id,k)=>{const v=el(id).value; return !v || l[k]===v;};
+  if(!F('f-zona','zona_barrio')||!F('f-sub','sub_rubro')||!F('f-web','website_status')||!F('f-verdict','verdict')||!F('f-prod','producto_sugerido')) return false;
+  const fc=el('f-cont').value;
+  if(fc==='no'&&l.contactado) return false;
+  if(fc==='si'&&!l.contactado) return false;
+  return true;
+}
+
+function contactBtns(l){
+  let b='';
+  if(l.whatsapp){ const msg=l.mensaje_whatsapp?('?text='+encodeURIComponent(l.mensaje_whatsapp)):''; b+=`<a class="btn wa" target="_blank" href="https://wa.me/${esc(l.whatsapp)}${msg}">💬 WhatsApp</a>`; }
+  if(l.phone) b+=`<a class="btn" href="tel:${esc(l.phone)}">📞 Llamar</a>`;
+  if(l.email) b+=`<a class="btn" href="mailto:${esc(l.email)}">✉️ Mail</a>`;
+  if(l.instagram) b+=`<a class="btn" target="_blank" href="${esc(l.instagram)}">📸 Instagram</a>`;
+  if(l.facebook) b+=`<a class="btn" target="_blank" href="${esc(l.facebook)}">📘 Facebook</a>`;
+  if(l.website) b+=`<a class="btn" target="_blank" href="${esc(l.website)}">🌐 Web</a>`;
+  const mapsq=encodeURIComponent([l.name,l.address,l.city].filter(Boolean).join(' '));
+  b+=`<a class="btn" target="_blank" href="https://www.google.com/maps/search/${mapsq}">📍 Maps</a>`;
+  return b;
+}
+
+function card(l){
+  const tags=(l.senales||[]).map(s=>`<span class="tag">${esc(s)}</span>`).join('');
+  return `<div class="card ${l.contactado?'done':''}" data-id="${l.id}">
+    <div class="top">
+      <div>
+        <p class="name">${esc(l.name)}</p>
+        <div class="meta">${esc(l.sub_rubro||'')}${l.tier?` · T${l.tier}`:''} · ${esc(l.zona_barrio||l.city||'')}${l.address?` · ${esc(l.address)}`:''}</div>
+      </div>
+      <span class="verdict v-${esc(l.verdict||'')}">${esc(l.verdict||'')}</span>
+    </div>
+    ${l.descripcion?`<div class="desc">${esc(l.descripcion)}</div>`:''}
+    ${l.manejado_por?`<div class="meta">👤 ${esc(l.manejado_por)}</div>`:''}
+    ${tags?`<div class="tags">${tags}</div>`:''}
+    <div class="scores"><span>fit <b>${l.fit_score??'—'}</b></span><span>momentum <b>${l.momentum_score??'—'}</b></span><span>final <b>${l.final_score??'—'}</b></span>${l.producto_sugerido?`<span>· ${esc(l.producto_sugerido)}</span>`:''}</div>
+    ${l.verdict_reason?`<div class="reason">${esc(l.verdict_reason)}</div>`:''}
+    ${l.mensaje_whatsapp?`<div class="msg">✍️ ${esc(l.mensaje_whatsapp)}</div>`:''}
+    <div class="btns">${contactBtns(l)}</div>
+    ${l.fuentes&&l.fuentes.length?`<div class="fuentes">Fuentes: ${l.fuentes.map(esc).join(' · ')} · confianza ${esc(l.confianza_global||'—')}</div>`:''}
+    <div class="notas"><textarea placeholder="Notas…" data-notas="${l.id}">${esc(l.notas||'')}</textarea><span class="saved" id="sv-${l.id}"></span></div>
+    <div class="done-row"><label><input type="checkbox" data-cont="${l.id}" ${l.contactado?'checked':''}/> Contactado</label></div>
+  </div>`;
+}
+
+function render(){
+  const rows=ALL.filter(matches);
+  el('count').textContent=`${rows.length} lead${rows.length!==1?'s':''}`;
+  el('list').innerHTML = rows.length?rows.map(card).join(''):'<div class="empty">Sin resultados con estos filtros.</div>';
+}
+
+async function setContact(id,val){
+  const {error}=await sb.from('atrio_leads_electro').update({contactado:val,contactado_at:val?new Date().toISOString():null}).eq('id',id);
+  const l=ALL.find(x=>x.id===id); if(l&&!error){ l.contactado=val; }
+  document.querySelector(`.card[data-id="${id}"]`)?.classList.toggle('done',val);
+  renderStats();
+  if(error) alert('No se pudo guardar: '+error.message);
+}
+async function setNotas(id,val){
+  const {error}=await sb.from('atrio_leads_electro').update({notas:val}).eq('id',id);
+  const l=ALL.find(x=>x.id===id); if(l&&!error) l.notas=val;
+  const sv=el('sv-'+id); if(sv){ sv.textContent=error?'✗':'guardado ✓'; setTimeout(()=>sv.textContent='',1500); }
+}
+
+document.addEventListener('change',e=>{
+  const c=e.target.closest('[data-cont]'); if(c){ setContact(c.dataset.cont,c.checked); }
+});
+let t; document.addEventListener('input',e=>{
+  const n=e.target.closest('[data-notas]');
+  if(n){ clearTimeout(t); t=setTimeout(()=>setNotas(n.dataset.notas,n.value),700); return; }
+});
+['q','f-zona','f-sub','f-web','f-verdict','f-prod','f-cont'].forEach(id=>el(id).addEventListener('input',render));
+load();
+</script>
+</body>
+</html>
