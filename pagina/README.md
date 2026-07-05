@@ -1,6 +1,8 @@
 # Atrio · Panel de Leads Electrónica
 
-Mini-página de gestión de la campaña de prospección (técnicos de celulares / tiendas de electrónica, CABA + Mar del Plata). Lee **en vivo** la tabla `atrio_leads_electro` de Supabase (proyecto Wepairr).
+**🌐 Live: https://atrio-leads-electro.vercel.app**
+
+Mini-página de gestión de la campaña de prospección (técnicos de celulares / tiendas de electrónica, CABA + Mar del Plata). Lee **en vivo** la tabla `atrio_leads_electro` de Supabase (proyecto Wepairr) — los leads que va cargando el autoloop aparecen sin necesidad de redeploy.
 
 ## Qué hace
 - Buscador por texto + filtros (zona, sub-rubro, estado web, veredicto, producto, contactado).
