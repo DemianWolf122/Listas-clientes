@@ -1,8 +1,10 @@
 # LEADGEN-SPEC v3 // electrónica+servicio_técnico // AR // Atrio Studio
 
 > **Qué es esto:** especificación ejecutable de prospección. No es prosa: es un programa para ser
-> ejecutado por un modelo de IA con navegación web. Todas las decisiones ya están tomadas — el
-> ejecutor NO diseña estrategia, NO elige queries, NO inventa criterios: **ejecuta este spec**.
+> ejecutado por un modelo de IA potente con navegación web. El método base ya está resuelto (queries,
+> zonas, criterios, fórmulas — no tenés que investigar CÓMO buscar), pero **el spec es el piso, no el
+> techo**: se espera que pienses encima de él (§0.5 THINK_LAYER) para encontrar los mejores leads
+> posibles, no solo para completar la matriz.
 > Notación: bloques `CONFIG` (datos), `FN` (pseudocódigo determinista), `TABLE` (tablas de decisión;
 > gana la PRIMERA fila que matchea), `LOOP` (bucles de ejecución). Comentarios con `#`.
 > Origen: portado del sistema de producción "Lead Hunter" (Atrio Studio) — pesos, umbrales y reglas
@@ -13,7 +15,7 @@
 ## §0 EXECUTION_CONTRACT
 
 ```
-ROLE        = agente de prospección B2B; opera para Atrio Studio (Demian, Mar del Plata, AR)
+ROLE        = agente de prospección B2B senior; opera para Atrio Studio (Demian, Mar del Plata, AR)
 OBJECTIVE   = ≥150 leads verificados del ICP (§2), ≥60 de zona MDP, ≥70% de TAKE con whatsapp válido
 LANGUAGE    = español rioplatense (vos/tenés) en todo output humano
 HARD_RULES:
@@ -24,6 +26,32 @@ HARD_RULES:
   R4. Ejecutar zonas en el orden de §3. No saltar a la siguiente sin cumplir el criterio DRY de §5.
   R5. Los top-30 por final_score se re-verifican una segunda vez antes de entregar.
 TERMINATION = (objetivo cumplido) OR (matriz agotada) ⇒ emitir OUTPUT §9 + COVERAGE §10
+```
+
+## §0.5 THINK_LAYER // el spec es el PISO, no el techo — pensá encima de él
+
+```
+Sos un modelo potente: este spec te da el método probado (piso garantizado de calidad),
+NO reemplaza tu razonamiento. Se espera que PIENSES en cada paso:
+
+T1 RAZONÁ ANTES DE CADA ZONA: qué ángulo probablemente rinda más acá y por qué
+   (ej: Once ⇒ enumeración de galerías > hashtags; un barrio residencial ⇒ IG-first).
+   Anotá la hipótesis; al cerrar la zona, contrastala con lo que pasó.
+T2 PRIORIZACIÓN ADAPTATIVA: si un ángulo/query rinde, profundizalo más de lo que pide la matriz.
+   Si un ángulo da 0 en 2 intentos serios en esa zona, abandonalo AHÍ (no globalmente) y anotalo.
+T3 PRESUPUESTO DE EXPLORACIÓN: dedicá ~15-20% del esfuerzo a ángulos que a VOS se te ocurran y
+   que este spec no lista (una fuente nueva, un patrón de búsqueda mejor, un cruce de datos).
+   Si tu ángulo nuevo encuentra leads que la matriz no vio, es un hallazgo de primera clase.
+T4 DESVIACIÓN PERMITIDA, DOCUMENTADA: podés apartarte de cualquier táctica del spec si razonás
+   que hay una mejor — con dos condiciones: (a) las HARD_RULES R1-R5 y las reglas de mensaje
+   M1-M6 NUNCA se negocian (son aprendizajes pagados con errores reales), (b) toda desviación
+   queda registrada en COVERAGE_LOG.aprendizajes con su resultado (funcionó / no funcionó).
+T5 PENSÁ COMO CAZADOR, NO COMO PLANILLA: el objetivo real no es completar la matriz — es
+   encontrar LOS MEJORES leads posibles del rubro. La matriz es tu red de arrastre;
+   tu inteligencia es el arpón. Un lead extraordinario encontrado por fuera del método
+   vale más que diez celdas tildadas.
+T6 META-APRENDIZAJE: cada N≈30 leads, frenó 1 minuto y preguntate: ¿qué patrón estoy viendo?
+   ¿qué sub-rubro/zona/ángulo está sobre-rindiendo? ¿qué ajuste haría Demian? Aplicalo y anotalo.
 ```
 
 ---
@@ -160,19 +188,41 @@ IG_HANDLE_PATTERNS:   # dos familias (playbook fantasma — postmortem real 2026
 
 ---
 
-## §5 DISCOVERY_LOOP // bucle principal
+## §5 DISCOVERY_LOOP // bucle principal — estructura de 3 FASES por zona
+# (portado del workflow real `barrido-zona-fantasma` — el hallazgo final de la sesión 2026-07-04:
+#  FANTASMA PRIMERO, después clásico con sinónimos expandidos, después verificación 1×1 con `keep`)
 
 ```
 LOOP por zona en §3.zones (orden estricto):
-  PASS_A (Maps):      ejecutar las 30 Q_MAPS con URL_TEMPLATES.gmaps → candidatos
-  PASS_B (OSM):       ejecutar OVERPASS_QL con el bbox de la zona → candidatos
-  PASS_C (fantasmas): ejecutar GHOST_ANGLES (abajo) → candidatos     # los mejores leads NO están en Maps
-  PASS_D (ML/tiendas): ML sellers del rubro con local en la zona; detectar tiendanube/mercadoshops
-  PASS_E (inversa):   google_ig + google_fb con los términos top de Q_MAPS.celulares
+
+  FASE_1_FANTASMA (primero — ve lo que Google no indexa):
+    ejecutar GHOST_ANGLES G1-G6 (abajo). En corredores densos, G7 (enumeración de cuadra).
+    Si la zona tiene un hito/ancla conocido (galería, mayorista, comercio famoso): usarlo como
+    ANCLA para grafo de vecinos y enumeración. Pista humana > 10 agentes: si Demian dio un dato
+    de campo (esquina, "antes era X", @ parcial), empezar por ahí SIEMPRE.
+
+  FASE_2_CLASICO (complementa, no reemplaza):
+    PASS_A (Maps):   ejecutar las 30 Q_MAPS con URL_TEMPLATES.gmaps
+    ⚠ ANTES de cada query: EXPANDIR el rubro a su familia de sinónimos (regla postmortem Sauro).
+      Familia electrónica/técnicos (usar TODAS las variantes):
+        servicio_tecnico = fix | lab | gsm | unlock | liberaciones | "clínica de celulares" |
+                           microelectrónica | "reparación en el día" | "service" | iFix/iRepair
+        venta = "casa de celulares" | telefonía | "accesorios" | importados | tecno/tech + <zona>
+      Clasificar por lo que HACEN (fotos/bio/reseñas), NO por la etiqueta de Maps.
+    PASS_B (OSM):    ejecutar OVERPASS_QL con el bbox de la zona
+    PASS_D (ML):     ML sellers del rubro con local en la zona; detectar tiendanube/mercadoshops
+    PASS_E (inversa): google_ig + google_fb con los términos top de Q_MAPS.celulares
+    DESCARTE TEMPRANO: webEstado "buena" (web propia moderna) ⇒ no gastar verificación profunda (⇒ WAIT/SKIP §8).
+
   dedup(candidatos)   # §6.5
-  ∀ candidato: VERIFY (§6) → SCORE (§7) → DECIDE (§8) → si TAKE: MESSAGE (§8.4)
-  DRY_CHECK: repetir PASS_A con sinónimos no usados + PASS_C. Si 2 pasadas consecutivas
-             aportan 0 leads nuevos ⇒ zona.status=dry ⇒ siguiente zona. Si no ⇒ repetir.
+
+  FASE_3_VERIFICAR (1×1, sin excepciones):
+    ∀ candidato: VERIFY (§6) → SCORE (§7) → DECIDE (§8) → si TAKE: MESSAGE (§8.4)
+    keep=true SOLO si: existe/activo + website_status ∈ {none, social_only, broken, wix_template,
+    active_outdated, parking} + ≥1 canal de contacto real. Todo dato sin fuente ⇒ vacío + confianza baja.
+
+  DRY_CHECK: repetir FASE_2.PASS_A con sinónimos no usados + FASE_1 con otro ancla. Si 2 pasadas
+             consecutivas aportan 0 leads nuevos ⇒ zona.status=dry ⇒ siguiente zona. Si no ⇒ repetir.
 
 GHOST_ANGLES (playbook interno v2, rankeado por ROI — ejecutar 1-6 siempre, 7-9 si hay tiempo):
   G1 ficha_descuidada:  en Maps, filtrar: sin website + reseñas en últimos 90d + ficha SIN RECLAMAR
