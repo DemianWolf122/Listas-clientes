@@ -24,13 +24,13 @@
   .sub{color:var(--muted2);font-size:12px}
   .btn-search{background:var(--accent);border:none;color:#fff;border-radius:10px;padding:9px 15px;font-size:13.5px;font-weight:650;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
   .btn-search.on{background:var(--card);color:var(--muted);border:1px solid var(--line)}
-  .stats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+  .stats{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 2px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
   .stat b{color:var(--txt);font-size:15px}
   .stat.take b{color:var(--take)} .stat.verif b{color:var(--verif)}
   /* search panel (colapsable) */
   .panel{max-height:0;overflow:hidden;transition:max-height .28s ease;margin-top:0}
-  .panel.open{max-height:640px;margin-top:11px}
+  .panel.open{max-height:860px;margin-top:11px}
   input,select{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px;outline:none;width:100%}
   input:focus,select:focus{border-color:var(--accent)}
   .prow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -95,8 +95,8 @@
     <div><h1>⚡ Atrio · <span>Leads</span></h1><div class="sub">CABA + Mar del Plata · en vivo</div></div>
     <button class="btn-search" id="togglesearch">🔍 Buscar y filtrar</button>
   </div>
-  <div class="stats" id="stats"></div>
   <div class="panel" id="panel">
+    <div class="stats" id="stats"></div>
     <div class="prow">
       <div class="search"><input id="q" placeholder="🔎 Nombre, zona, dirección, rubro…" /></div>
       <select id="sort" title="Ordenar">
