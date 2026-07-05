@@ -14,3 +14,4 @@ Cada ciclo del autoloop agrega una línea acá. Formato: `[fecha ART] zona/famil
 
 ## Ciclos autónomos
 <!-- el autoloop escribe debajo -->
+- [2026-07-05 ~03:35 ART] caba-once/celulares · +2 leads (0 TAKE / 2 WAIT / 0 SKIP / 0 MANUAL) · pendientes: 17. Nota: Once/celulares por WebSearch trae negocios con web propia establecida (OnCelular, Celulares Pueyrredón) → WAIT. Los fantasma TAKE requieren ángulo Maps/IG (403). Ciclo de prueba manual end-to-end OK.
