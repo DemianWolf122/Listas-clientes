@@ -16,29 +16,31 @@
   html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45}
   body{padding-bottom:60px}
   a{color:inherit}
-  /* ---------- HEADER ---------- */
   header{position:sticky;top:0;z-index:20;background:rgba(11,15,26,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 16px}
   .hwrap{max-width:1280px;margin:0 auto}
-  .htop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .htop{display:flex;justify-content:space-between;align-items:center;gap:10px}
   h1{margin:0;font-size:18px;letter-spacing:.2px}
   h1 span{color:var(--gold)}
   .sub{color:var(--muted2);font-size:12px}
-  .stats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+  .btn-search{background:var(--accent);border:none;color:#fff;border-radius:10px;padding:9px 15px;font-size:13.5px;font-weight:650;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+  .btn-search.on{background:var(--card);color:var(--muted);border:1px solid var(--line)}
+  .stats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
   .stat b{color:var(--txt);font-size:15px}
   .stat.take b{color:var(--take)} .stat.verif b{color:var(--verif)}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .search{flex:1;min-width:180px;position:relative}
+  /* search panel (colapsable) */
+  .panel{max-height:0;overflow:hidden;transition:max-height .28s ease;margin-top:0}
+  .panel.open{max-height:640px;margin-top:11px}
   input,select{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px;outline:none;width:100%}
   input:focus,select:focus{border-color:var(--accent)}
+  .prow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .prow .search{flex:1;min-width:180px}
+  .prow select{width:auto;min-width:150px}
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
   .qchip{background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 13px;font-size:12.5px;cursor:pointer;user-select:none;transition:.12s}
   .qchip:hover{border-color:var(--accent)}
   .qchip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-  .filters{display:none;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:9px}
-  .filters.open{display:grid}
-  .togglef{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:10px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
-  /* ---------- GRID ---------- */
+  .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:9px}
   main{max-width:1280px;margin:0 auto;padding:14px 16px}
   .count{color:var(--muted2);font-size:12.5px;margin:2px 2px 12px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
@@ -53,73 +55,72 @@
   .v-WAIT{background:rgba(229,181,103,.16);color:var(--wait)}
   .v-SKIP{background:rgba(107,118,136,.2);color:#95a2b8}
   .v-MANUAL_REVIEW{background:rgba(185,139,255,.16);color:var(--manual)}
-  .verif{background:rgba(62,207,142,.13);color:var(--verif);display:inline-flex;align-items:center;gap:3px}
+  .verif{background:rgba(62,207,142,.13);color:var(--verif)}
   .meta{color:var(--muted);font-size:12px}
   .scores{display:flex;gap:12px;font-size:11.5px;color:var(--muted2);flex-wrap:wrap;align-items:center}
   .scores b{color:var(--txt);font-size:14px}
   .prodtag{margin-left:auto;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--gold)}
   .desc{color:#c6d2ea;font-size:13.5px}
-  .who{font-size:12px;color:var(--muted)}
-  .who b{color:var(--txt)}
-  /* buttons */
+  .who{font-size:12px;color:var(--muted)} .who b{color:var(--txt)}
   .btns{display:flex;gap:6px;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:5px;text-decoration:none;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:9px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:.12s}
   .btn:hover{border-color:var(--accent)}
   .btn.wa{background:var(--wa);color:#04240f;border-color:transparent}
   .btn:active{transform:scale(.96)}
   .btn.ghost{background:none;color:var(--muted)}
-  .copyrow{display:flex;gap:6px;flex-wrap:wrap}
-  /* detail */
-  .detail{display:none;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:9px;margin-top:2px}
-  .detail.open{display:flex}
+  .sect{display:none;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:9px}
+  .sect.open{display:flex}
   .reason{background:var(--card2);border-left:3px solid var(--line);padding:8px 10px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--muted)}
   .msgbox{background:var(--bg2);border:1px dashed var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px;color:#bccdec;white-space:pre-wrap}
-  .msglbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:4px;font-weight:700}
+  .msglbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:4px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
   .fuentes{font-size:11px;color:var(--muted2)}
   .notas textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;font-size:12.5px;resize:vertical;min-height:40px;font-family:inherit}
-  .cfoot{display:flex;align-items:center;gap:10px;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
+  .cfoot{display:flex;align-items:center;gap:8px;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;margin-top:auto;flex-wrap:wrap}
   .chk{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none}
   .chk input{width:18px;height:18px;accent-color:var(--take);cursor:pointer}
-  .moreb{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:4px}
-  .moreb:hover{color:var(--accent)}
+  .toggles{display:flex;gap:6px}
+  .tg{background:none;border:1px solid var(--line);color:var(--muted);font-size:12px;cursor:pointer;border-radius:8px;padding:5px 9px;display:flex;align-items:center;gap:4px}
+  .tg:hover{color:var(--accent);border-color:var(--accent)}
+  .tg.on{color:var(--accent);border-color:var(--accent)}
   .saved{color:var(--take);font-size:11px}
   .empty{text-align:center;color:var(--muted);padding:50px 0}
-  /* toast */
   #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(80px);background:var(--take);color:#04240f;font-weight:700;font-size:13px;padding:10px 18px;border-radius:10px;box-shadow:var(--shadow);opacity:0;transition:.25s;z-index:50;pointer-events:none}
   #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-  @media(max-width:520px){ .grid{grid-template-columns:1fr} h1{font-size:16px} }
+  @media(max-width:520px){ .grid{grid-template-columns:1fr} h1{font-size:16px} .prow select{width:100%} }
 </style>
 </head>
 <body>
 <header><div class="hwrap">
   <div class="htop">
-    <div><h1>⚡ Atrio · <span>Leads Electrónica</span></h1><div class="sub">CABA + Mar del Plata · en vivo desde Supabase</div></div>
+    <div><h1>⚡ Atrio · <span>Leads</span></h1><div class="sub">CABA + Mar del Plata · en vivo</div></div>
+    <button class="btn-search" id="togglesearch">🔍 Buscar y filtrar</button>
   </div>
   <div class="stats" id="stats"></div>
-  <div class="controls">
-    <div class="search"><input id="q" placeholder="🔎 Buscar nombre, zona, dirección, rubro…" /></div>
-    <select id="sort" title="Ordenar">
-      <option value="verif">Verificados primero</option>
-      <option value="final">Mayor score</option>
-      <option value="verdict">Por veredicto</option>
-      <option value="name">Nombre A-Z</option>
-    </select>
-    <button class="togglef" id="togglef">⚙ Filtros</button>
-  </div>
-  <div class="chips" id="qchips">
-    <span class="qchip on" data-q="all">Todos</span>
-    <span class="qchip" data-q="take">✅ TAKE</span>
-    <span class="qchip" data-q="verif">✓ Verificados</span>
-    <span class="qchip" data-q="nocont">Sin contactar</span>
-    <span class="qchip" data-q="mdp">Mar del Plata</span>
-    <span class="qchip" data-q="caba">CABA</span>
-  </div>
-  <div class="filters" id="filters">
-    <select id="f-zona"><option value="">Zona / barrio</option></select>
-    <select id="f-sub"><option value="">Sub-rubro</option></select>
-    <select id="f-web"><option value="">Estado web</option></select>
-    <select id="f-verdict"><option value="">Veredicto</option></select>
-    <select id="f-prod"><option value="">Producto</option></select>
+  <div class="panel" id="panel">
+    <div class="prow">
+      <div class="search"><input id="q" placeholder="🔎 Nombre, zona, dirección, rubro…" /></div>
+      <select id="sort" title="Ordenar">
+        <option value="verif">Verificados primero</option>
+        <option value="final">Mayor score</option>
+        <option value="verdict">Por veredicto</option>
+        <option value="name">Nombre A-Z</option>
+      </select>
+    </div>
+    <div class="chips" id="qchips">
+      <span class="qchip on" data-q="all">Todos</span>
+      <span class="qchip" data-q="take">✅ TAKE</span>
+      <span class="qchip" data-q="verif">✓ Verificados</span>
+      <span class="qchip" data-q="nocont">Sin contactar</span>
+      <span class="qchip" data-q="mdp">Mar del Plata</span>
+      <span class="qchip" data-q="caba">CABA</span>
+    </div>
+    <div class="filters">
+      <select id="f-zona"><option value="">Zona / barrio</option></select>
+      <select id="f-sub"><option value="">Sub-rubro</option></select>
+      <select id="f-web"><option value="">Estado web</option></select>
+      <select id="f-verdict"><option value="">Veredicto</option></select>
+      <select id="f-prod"><option value="">Producto</option></select>
+    </div>
   </div>
 </div></header>
 
@@ -143,8 +144,8 @@ async function load(){
   if(error){el('count').textContent='Error: '+error.message;return;}
   ALL=data||[]; buildFilters(); renderStats(); render();
 }
-function isVerif(l){return Array.isArray(l.senales)&&l.senales.includes('verificado_web');}
-function uniq(k){return [...new Set(ALL.map(l=>l[k]).filter(Boolean))].sort();}
+const isVerif=l=>Array.isArray(l.senales)&&l.senales.includes('verificado_web');
+const uniq=k=>[...new Set(ALL.map(l=>l[k]).filter(Boolean))].sort();
 function fillSel(id,vals){const s=el(id);vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});}
 function buildFilters(){fillSel('f-zona',uniq('zona_barrio'));fillSel('f-sub',uniq('sub_rubro'));fillSel('f-web',uniq('website_status'));fillSel('f-verdict',uniq('verdict'));fillSel('f-prod',uniq('producto_sugerido'));}
 function renderStats(){
@@ -166,7 +167,7 @@ function matches(l){
   if(quick==='verif'&&!isVerif(l))return false;
   if(quick==='nocont'&&l.contactado)return false;
   if(quick==='mdp'&&!(l.city||'').toLowerCase().includes('mar del plata'))return false;
-  if(quick==='caba'&&!(l.province==='CABA'))return false;
+  if(quick==='caba'&&l.province!=='CABA')return false;
   return true;
 }
 const VORDER={TAKE:0,WAIT:1,MANUAL_REVIEW:2,SKIP:3};
@@ -181,7 +182,7 @@ function sortLeads(rows){
 }
 function waHref(l){const m=l.mensaje_whatsapp?('?text='+encodeURIComponent(l.mensaje_whatsapp)):'';return `https://wa.me/${esc(l.whatsapp)}${m}`;}
 function mailHref(l){
-  const subj=l.email_asunto||('Atrio Studio — '+(l.producto_sugerido==='wepairr'?'seguimiento de reparaciones':'catálogo con stock en vivo'));
+  const subj=l.email_asunto||('Atrio Studio — catálogo con stock en vivo');
   const body=l.email_cuerpo||l.mensaje_whatsapp||'';
   return `mailto:${esc(l.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
 }
@@ -196,18 +197,15 @@ function contactBtns(l){
   b+=`<a class="btn" target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent([l.name,l.address,l.city].filter(Boolean).join(' '))}">📍 Maps</a>`;
   return b;
 }
-function emailText(l){
-  const subj=l.email_asunto||''; const body=l.email_cuerpo||'';
-  if(!subj&&!body)return '';
-  return (subj?('Asunto: '+subj+'\n\n'):'')+body;
-}
+function emailText(l){const s=l.email_asunto||'',b=l.email_cuerpo||'';if(!s&&!b)return '';return (s?('Asunto: '+s+'\n\n'):'')+b;}
 function card(l){
-  const verifB=isVerif(l)?`<span class="badge verif">✓ verificado</span>`:'';
+  const verifB=isVerif(l)?`<span class="badge verif">✓ verif</span>`:'';
   const conf=l.verdict_confidence!=null?` · ${Math.round(l.verdict_confidence*100)}%`:'';
   const em=emailText(l);
-  let copyrow='';
-  if(l.mensaje_whatsapp)copyrow+=`<button class="btn ghost" data-copy="wa" data-id="${l.id}">📋 Copiar WhatsApp</button>`;
-  if(em)copyrow+=`<button class="btn ghost" data-copy="mail" data-id="${l.id}">📋 Copiar mail</button>`;
+  const hasMsg=l.mensaje_whatsapp||em;
+  let msgs='';
+  if(l.mensaje_whatsapp)msgs+=`<div><div class="msglbl">WhatsApp <button class="btn ghost" data-copy="wa" data-id="${l.id}">📋 Copiar</button></div><div class="msgbox">${esc(l.mensaje_whatsapp)}</div></div>`;
+  if(em)msgs+=`<div><div class="msglbl">Mail <button class="btn ghost" data-copy="mail" data-id="${l.id}">📋 Copiar</button></div><div class="msgbox">${esc(em)}</div></div>`;
   return `<div class="card ${l.contactado?'done':''}" data-id="${l.id}">
     <div class="ctop">
       <p class="name">${esc(l.name)}</p>
@@ -218,18 +216,18 @@ function card(l){
     ${l.descripcion?`<div class="desc">${esc(l.descripcion)}</div>`:''}
     ${l.manejado_por?`<div class="who">👤 <b>${esc(l.manejado_por)}</b></div>`:''}
     <div class="btns">${contactBtns(l)}</div>
-    ${copyrow?`<div class="copyrow">${copyrow}</div>`:''}
-    <div class="detail" data-detail="${l.id}">
+    ${hasMsg?`<div class="sect" data-sect="msg-${l.id}">${msgs}</div>`:''}
+    <div class="sect" data-sect="det-${l.id}">
       ${l.verdict_reason?`<div class="reason">${esc(l.verdict_reason)}</div>`:''}
-      ${l.mensaje_whatsapp?`<div><div class="msglbl">Mensaje WhatsApp</div><div class="msgbox">${esc(l.mensaje_whatsapp)}</div></div>`:''}
-      ${em?`<div><div class="msglbl">Mensaje mail</div><div class="msgbox">${esc(em)}</div></div>`:''}
-      ${l.notas&&!l.contactado?'':''}
       ${(Array.isArray(l.fuentes)&&l.fuentes.length)?`<div class="fuentes">Fuentes: ${l.fuentes.map(esc).join(' · ')} · confianza ${esc(l.confianza_global||'—')}</div>`:''}
       <div class="notas"><div class="msglbl">Notas</div><textarea placeholder="Escribí una nota…" data-notas="${l.id}">${esc(l.notas||'')}</textarea><span class="saved" id="sv-${l.id}"></span></div>
     </div>
     <div class="cfoot">
       <label class="chk"><input type="checkbox" data-cont="${l.id}" ${l.contactado?'checked':''}/> Contactado</label>
-      <button class="moreb" data-more="${l.id}">Detalle ▾</button>
+      <div class="toggles">
+        ${hasMsg?`<button class="tg" data-tg="msg-${l.id}">💬 Mensajes</button>`:''}
+        <button class="tg" data-tg="det-${l.id}">Detalle ▾</button>
+      </div>
     </div>
   </div>`;
 }
@@ -238,7 +236,7 @@ function render(){
   el('count').textContent=`${rows.length} lead${rows.length!==1?'s':''}`;
   el('list').innerHTML=rows.length?rows.map(card).join(''):'<div class="empty">Sin resultados con estos filtros.</div>';
 }
-function toast(msg){const t=el('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function toast(m){const t=el('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
 async function setContact(id,val){
   const {error}=await sb.from('atrio_leads_electro').update({contactado:val,contactado_at:val?new Date().toISOString():null}).eq('id',id);
   const l=ALL.find(x=>x.id===id);if(l&&!error)l.contactado=val;
@@ -249,19 +247,18 @@ async function setContact(id,val){
 let nt;async function setNotas(id,val){
   const {error}=await sb.from('atrio_leads_electro').update({notas:val}).eq('id',id);
   const l=ALL.find(x=>x.id===id);if(l&&!error)l.notas=val;
-  const sv=el('sv-'+id);if(sv){sv.textContent=error?'✗ error':'guardado ✓';setTimeout(()=>sv.textContent='',1400);}
+  const sv=el('sv-'+id);if(sv){sv.textContent=error?'✗':'guardado ✓';setTimeout(()=>sv.textContent='',1400);}
 }
-// events
 document.addEventListener('click',e=>{
-  const more=e.target.closest('[data-more]');
-  if(more){document.querySelector(`[data-detail="${more.dataset.more}"]`)?.classList.toggle('open');more.textContent=more.textContent.includes('▾')?'Detalle ▴':'Detalle ▾';return;}
+  const tg=e.target.closest('[data-tg]');
+  if(tg){const s=document.querySelector(`[data-sect="${tg.dataset.tg}"]`);if(s){s.classList.toggle('open');tg.classList.toggle('on',s.classList.contains('open'));}return;}
   const cp=e.target.closest('[data-copy]');
-  if(cp){const l=ALL.find(x=>x.id===cp.dataset.id);const txt=cp.dataset.copy==='wa'?l.mensaje_whatsapp:emailText(l);navigator.clipboard.writeText(txt).then(()=>toast('Copiado al portapapeles ✓')).catch(()=>toast('No se pudo copiar'));return;}
+  if(cp){const l=ALL.find(x=>x.id===cp.dataset.id);const txt=cp.dataset.copy==='wa'?l.mensaje_whatsapp:emailText(l);navigator.clipboard.writeText(txt).then(()=>toast('Copiado ✓')).catch(()=>toast('No se pudo copiar'));return;}
 });
 document.addEventListener('change',e=>{const c=e.target.closest('[data-cont]');if(c)setContact(c.dataset.cont,c.checked);});
 document.addEventListener('input',e=>{const n=e.target.closest('[data-notas]');if(n){clearTimeout(nt);nt=setTimeout(()=>setNotas(n.dataset.notas,n.value),700);}});
 ['q','f-zona','f-sub','f-web','f-verdict','f-prod','sort'].forEach(id=>el(id).addEventListener('input',render));
-el('togglef').addEventListener('click',()=>el('filters').classList.toggle('open'));
+el('togglesearch').addEventListener('click',()=>{const p=el('panel');const open=p.classList.toggle('open');el('togglesearch').classList.toggle('on',open);el('togglesearch').textContent=open?'✕ Cerrar búsqueda':'🔍 Buscar y filtrar';});
 el('qchips').addEventListener('click',e=>{const c=e.target.closest('.qchip');if(!c)return;quick=c.dataset.q;document.querySelectorAll('.qchip').forEach(x=>x.classList.toggle('on',x===c));render();});
 load();
 </script>

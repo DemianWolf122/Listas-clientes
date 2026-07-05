@@ -28,6 +28,13 @@ Cada ciclo del autoloop agrega una línea acá. Formato: `[fecha ART] zona/famil
 - **Página v2**: responsive (grilla adaptable), filtros rápidos (TAKE/Verificados/zona), orden, copiar mensajes
   (WhatsApp/mail), detalle expandible, badge "verificado". Redeploy a Vercel.
 
+## Mensajes con psicología de ventas + página v3 (2026-07-05)
+- Mensajes de los 7 TAKE reescritos con aversión a la pérdida (dolor operativo real: "¿ya está listo?",
+  contestar stock por chat, comisión de ML) + efecto dotación (demo funcionando) + tono de vecino — sin
+  marcar errores ni prometer resultados (respetando M1-M6 del spec).
+- Página v3: botón "Buscar y filtrar" que pliega toda la búsqueda; mensajes de cada lead plegados detrás de
+  un toggle "Mensajes"; tarjetas más limpias. Verificado en preview, redeploy a Vercel.
+
 ## Ciclos autónomos
 <!-- el autoloop escribe debajo -->
 - [2026-07-05 ~03:35 ART] caba-once/celulares · +2 leads (0 TAKE / 2 WAIT / 0 SKIP / 0 MANUAL) · pendientes: 17. Nota: Once/celulares por WebSearch trae negocios con web propia establecida (OnCelular, Celulares Pueyrredón) → WAIT. Los fantasma TAKE requieren ángulo Maps/IG (403). Ciclo de prueba manual end-to-end OK.
