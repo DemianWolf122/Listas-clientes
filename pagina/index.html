@@ -60,6 +60,7 @@
   .scores{display:flex;gap:12px;font-size:11.5px;color:var(--muted2);flex-wrap:wrap;align-items:center}
   .scores b{color:var(--txt);font-size:14px}
   .prodtag{margin-left:auto;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--gold)}
+  .tanda{font-size:11px;color:var(--gold);background:rgba(229,181,103,.08);border:1px solid rgba(229,181,103,.3);border-radius:6px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
   .desc{color:#c6d2ea;font-size:13.5px}
   .who{font-size:12px;color:var(--muted)} .who b{color:var(--txt)}
   .btns{display:flex;gap:6px;flex-wrap:wrap}
@@ -100,6 +101,7 @@
     <div class="prow">
       <div class="search"><input id="q" placeholder="🔎 Nombre, zona, dirección, rubro…" /></div>
       <select id="sort" title="Ordenar">
+        <option value="recent">Más recientes</option>
         <option value="verif">Verificados primero</option>
         <option value="final">Mayor score</option>
         <option value="verdict">Por veredicto</option>
@@ -120,6 +122,7 @@
       <select id="f-web"><option value="">Estado web</option></select>
       <select id="f-verdict"><option value="">Veredicto</option></select>
       <select id="f-prod"><option value="">Producto</option></select>
+      <select id="f-tanda"><option value="">Tanda</option></select>
     </div>
   </div>
 </div></header>
@@ -147,7 +150,7 @@ async function load(){
 const isVerif=l=>Array.isArray(l.senales)&&l.senales.includes('verificado_web');
 const uniq=k=>[...new Set(ALL.map(l=>l[k]).filter(Boolean))].sort();
 function fillSel(id,vals){const s=el(id);vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});}
-function buildFilters(){fillSel('f-zona',uniq('zona_barrio'));fillSel('f-sub',uniq('sub_rubro'));fillSel('f-web',uniq('website_status'));fillSel('f-verdict',uniq('verdict'));fillSel('f-prod',uniq('producto_sugerido'));}
+function buildFilters(){fillSel('f-zona',uniq('zona_barrio'));fillSel('f-sub',uniq('sub_rubro'));fillSel('f-web',uniq('website_status'));fillSel('f-verdict',uniq('verdict'));fillSel('f-prod',uniq('producto_sugerido'));fillSel('f-tanda',uniq('tanda'));}
 function renderStats(){
   const c=v=>ALL.filter(l=>l.verdict===v).length;
   el('stats').innerHTML=
@@ -162,7 +165,7 @@ function matches(l){
   const q=el('q').value.trim().toLowerCase();
   if(q){const hay=[l.name,l.zona_barrio,l.address,l.descripcion,l.sub_rubro,l.city].join(' ').toLowerCase();if(!hay.includes(q))return false;}
   const F=(id,k)=>{const v=el(id).value;return !v||l[k]===v;};
-  if(!F('f-zona','zona_barrio')||!F('f-sub','sub_rubro')||!F('f-web','website_status')||!F('f-verdict','verdict')||!F('f-prod','producto_sugerido'))return false;
+  if(!F('f-zona','zona_barrio')||!F('f-sub','sub_rubro')||!F('f-web','website_status')||!F('f-verdict','verdict')||!F('f-prod','producto_sugerido')||!F('f-tanda','tanda'))return false;
   if(quick==='take'&&l.verdict!=='TAKE')return false;
   if(quick==='verif'&&!isVerif(l))return false;
   if(quick==='nocont'&&l.contactado)return false;
@@ -174,6 +177,7 @@ const VORDER={TAKE:0,WAIT:1,MANUAL_REVIEW:2,SKIP:3};
 function sortLeads(rows){
   const s=el('sort').value;
   return rows.sort((a,b)=>{
+    if(s==='recent')return (''+(b.created_at||'')).localeCompare(''+(a.created_at||''));
     if(s==='name')return (a.name||'').localeCompare(b.name||'');
     if(s==='verdict')return (VORDER[a.verdict]-VORDER[b.verdict])||(b.final_score-a.final_score);
     if(s==='verif'){const d=(isVerif(b)-isVerif(a));if(d)return d;const t=(VORDER[a.verdict]-VORDER[b.verdict]);if(t)return t;return b.final_score-a.final_score;}
@@ -212,6 +216,7 @@ function card(l){
       <div class="badges"><span class="badge v-${esc(l.verdict)}">${esc(l.verdict)}${conf}</span>${verifB}</div>
     </div>
     <div class="meta">${esc(l.sub_rubro||'')}${l.tier?` · T${l.tier}`:''} · ${esc(l.zona_barrio||l.city||'')}${l.address?` · ${esc(l.address)}`:''}</div>
+    ${l.tanda?`<div class="tanda">🏷️ ${esc(l.tanda)}</div>`:''}
     <div class="scores"><span>fit <b>${l.fit_score??'—'}</b></span><span>mom <b>${l.momentum_score??'—'}</b></span><span>final <b>${l.final_score??'—'}</b></span>${l.producto_sugerido?`<span class="prodtag">${esc(l.producto_sugerido)}</span>`:''}</div>
     ${l.descripcion?`<div class="desc">${esc(l.descripcion)}</div>`:''}
     ${l.manejado_por?`<div class="who">👤 <b>${esc(l.manejado_por)}</b></div>`:''}
@@ -257,7 +262,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('change',e=>{const c=e.target.closest('[data-cont]');if(c)setContact(c.dataset.cont,c.checked);});
 document.addEventListener('input',e=>{const n=e.target.closest('[data-notas]');if(n){clearTimeout(nt);nt=setTimeout(()=>setNotas(n.dataset.notas,n.value),700);}});
-['q','f-zona','f-sub','f-web','f-verdict','f-prod','sort'].forEach(id=>el(id).addEventListener('input',render));
+['q','f-zona','f-sub','f-web','f-verdict','f-prod','f-tanda','sort'].forEach(id=>el(id).addEventListener('input',render));
 el('togglesearch').addEventListener('click',()=>{const p=el('panel');const open=p.classList.toggle('open');el('togglesearch').classList.toggle('on',open);el('togglesearch').textContent=open?'✕ Cerrar búsqueda':'🔍 Buscar y filtrar';});
 el('qchips').addEventListener('click',e=>{const c=e.target.closest('.qchip');if(!c)return;quick=c.dataset.q;document.querySelectorAll('.qchip').forEach(x=>x.classList.toggle('on',x===c));render();});
 load();
