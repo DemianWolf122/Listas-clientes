@@ -148,6 +148,8 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const el=id=>document.getElementById(id);
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let ALL=[], quick="all";
+const MSG_TRABAJOS="Acá pueden ver algunos de nuestros trabajos: atriostudio.com.ar";
+const MSG_SALUDO="Muchas gracias por su tiempo. Quedamos a disposición por cualquier consulta. Saludos cordiales, Demian — Atrio Studio.";
 
 async function load(){
   const {data,error}=await sb.from('atrio_leads_electro').select('*');
@@ -237,6 +239,8 @@ function modalContent(l){
   let msgs='';
   if(l.mensaje_whatsapp)msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">WhatsApp</span><button class="btn ghost" data-copy="wa" data-id="${l.id}">📋 Copiar</button></div><div class="msgbox">${esc(l.mensaje_whatsapp)}</div></div>`;
   if(em)msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">Mail</span><button class="btn ghost" data-copy="mail" data-id="${l.id}">📋 Copiar</button></div><div class="msgbox">${esc(em)}</div></div>`;
+  msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">Nuestros trabajos</span><button class="btn ghost" data-copy="trabajos">📋 Copiar</button></div><div class="msgbox">${esc(MSG_TRABAJOS)}</div></div>`;
+  msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">Saludo cordial</span><button class="btn ghost" data-copy="saludo">📋 Copiar</button></div><div class="msgbox">${esc(MSG_SALUDO)}</div></div>`;
   return `<button class="mclose" id="mclose">✕</button>
     <h2 class="mname">${esc(l.name)}</h2>
     <div class="mbadges">${badges(l)}${l.tanda?`<span class="tanda">🏷️ ${esc(l.tanda)}</span>`:''}</div>
@@ -250,7 +254,7 @@ function modalContent(l){
     ${l.descripcion?`<div style="color:#c6d2ea;font-size:14px">${esc(l.descripcion)}</div>`:''}
     ${l.manejado_por?`<div class="who" style="margin-top:8px">👤 <b>${esc(l.manejado_por)}</b></div>`:''}
     <div class="msec"><div class="mlbl">Contacto</div><div class="btns2">${contactBtns(l)}</div></div>
-    ${msgs?`<div class="msec"><div class="mlbl">Mensajes sugeridos</div>${msgs}</div>`:''}
+    <div class="msec"><div class="mlbl">Mensajes sugeridos</div>${msgs}</div>
     <div class="msec"><div class="mlbl">Análisis</div>
       ${l.verdict_reason?`<div class="reason">${esc(l.verdict_reason)}</div>`:'<div class="reason">—</div>'}
       ${(Array.isArray(l.fuentes)&&l.fuentes.length)?`<div class="fuentes">Fuentes: ${l.fuentes.map(esc).join(' · ')} · confianza ${esc(l.confianza_global||'—')}</div>`:''}
@@ -279,7 +283,11 @@ let nt;async function setNotas(id,val){
 }
 document.addEventListener('click',e=>{
   const cp=e.target.closest('[data-copy]');
-  if(cp){const l=ALL.find(x=>x.id===cp.dataset.id);const txt=cp.dataset.copy==='wa'?l.mensaje_whatsapp:emailText(l);navigator.clipboard.writeText(txt).then(()=>toast('Copiado ✓')).catch(()=>toast('No se pudo copiar'));return;}
+  if(cp){const k=cp.dataset.copy;let txt;
+    if(k==='trabajos')txt=MSG_TRABAJOS;
+    else if(k==='saludo')txt=MSG_SALUDO;
+    else{const l=ALL.find(x=>x.id===cp.dataset.id);txt=k==='wa'?l.mensaje_whatsapp:emailText(l);}
+    navigator.clipboard.writeText(txt).then(()=>toast('Copiado ✓')).catch(()=>toast('No se pudo copiar'));return;}
   if(e.target.closest('#mclose')||e.target.id==='modal'){closeModal();return;}
   const card=e.target.closest('[data-open]');
   if(card && !e.target.closest('a,button,input,textarea,label')){openModal(card.dataset.id);}
