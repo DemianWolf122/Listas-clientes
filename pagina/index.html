@@ -117,6 +117,7 @@
     <div class="chips" id="qchips">
       <span class="qchip on" data-q="all">Todos</span>
       <span class="qchip" data-q="take">✅ TAKE</span>
+      <span class="qchip" data-q="wa">💬 Con WhatsApp</span>
       <span class="qchip" data-q="verif">✓ Verificados</span>
       <span class="qchip" data-q="nocont">Sin contactar</span>
       <span class="qchip" data-q="mdp">Mar del Plata</span>
@@ -148,7 +149,7 @@ const SUPABASE_KEY="sb_publishable_4Asc-X1Wrs2FI1QAvi7FuA_SuSXbCMJ";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const el=id=>document.getElementById(id);
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let ALL=[], quick="all";
+let ALL=[], activeQuicks=new Set();
 const MSG_TRABAJOS="Acá pueden ver algunos de nuestros trabajos: atriostudio.com.ar";
 const MSG_SALUDO="Muchas gracias por su tiempo. Quedamos a disposición por cualquier consulta. Saludos cordiales, Demian — Atrio Studio.";
 
@@ -176,11 +177,12 @@ function matches(l){
   if(q){const hay=[l.name,l.zona_barrio,l.address,l.descripcion,l.sub_rubro,l.city].join(' ').toLowerCase();if(!hay.includes(q))return false;}
   const F=(id,k)=>{const v=el(id).value;return !v||l[k]===v;};
   if(!F('f-zona','zona_barrio')||!F('f-sub','sub_rubro')||!F('f-web','website_status')||!F('f-verdict','verdict')||!F('f-prod','producto_sugerido')||!F('f-tanda','tanda'))return false;
-  if(quick==='take'&&l.verdict!=='TAKE')return false;
-  if(quick==='verif'&&!isVerif(l))return false;
-  if(quick==='nocont'&&l.contactado)return false;
-  if(quick==='mdp'&&!(l.city||'').toLowerCase().includes('mar del plata'))return false;
-  if(quick==='caba'&&l.province!=='CABA')return false;
+  if(activeQuicks.has('take')&&l.verdict!=='TAKE')return false;
+  if(activeQuicks.has('wa')&&!l.whatsapp)return false;
+  if(activeQuicks.has('verif')&&!isVerif(l))return false;
+  if(activeQuicks.has('nocont')&&l.contactado)return false;
+  if(activeQuicks.has('mdp')&&!(l.city||'').toLowerCase().includes('mar del plata'))return false;
+  if(activeQuicks.has('caba')&&l.province!=='CABA')return false;
   return true;
 }
 const VORDER={TAKE:0,WAIT:1,MANUAL_REVIEW:2,SKIP:3};
@@ -313,7 +315,14 @@ document.addEventListener('change',e=>{const c=e.target.closest('[data-cont]');i
 document.addEventListener('input',e=>{const n=e.target.closest('[data-notas]');if(n){clearTimeout(nt);nt=setTimeout(()=>setNotas(n.dataset.notas,n.value),700);}});
 ['q','f-zona','f-sub','f-web','f-verdict','f-prod','f-tanda','sort'].forEach(id=>el(id).addEventListener('input',render));
 el('togglesearch').addEventListener('click',()=>{const p=el('panel');const open=p.classList.toggle('open');el('togglesearch').classList.toggle('on',open);el('togglesearch').textContent=open?'✕ Cerrar búsqueda':'🔍 Buscar y filtrar';});
-el('qchips').addEventListener('click',e=>{const c=e.target.closest('.qchip');if(!c)return;quick=c.dataset.q;document.querySelectorAll('.qchip').forEach(x=>x.classList.toggle('on',x===c));render();});
+el('qchips').addEventListener('click',e=>{
+  const c=e.target.closest('.qchip');if(!c)return;
+  const q=c.dataset.q;
+  if(q==='all'){activeQuicks.clear();}
+  else{activeQuicks.has(q)?activeQuicks.delete(q):activeQuicks.add(q);}
+  document.querySelectorAll('.qchip').forEach(x=>x.classList.toggle('on', x.dataset.q==='all'?activeQuicks.size===0:activeQuicks.has(x.dataset.q)));
+  render();
+});
 load();
 </script>
 </body>
