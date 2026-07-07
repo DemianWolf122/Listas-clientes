@@ -376,9 +376,13 @@ def hunt_zone(zona, use_ddg, limit):
         if use_ddg and not (lead.get("instagram") or lead.get("website") or lead.get("phone")):
             enrich(lead)
         lead["website_status"] = classify_website(lead)
-        if lead.get("phone"):
-            wa = norm_ar(lead["phone"])
-            if wa:
+        # WhatsApp SOLO si el telefono es claramente un celular (marcador "15" o "+54 9").
+        # Las lineas fijas NO tienen WhatsApp: dejar solo `phone` para llamar y que la
+        # verificacion web complete el celular real. (fix 2026-07-06: evitar wa.me rotos)
+        raw = lead.get("phone") or ""
+        if re.search(r"\+?54\s*9|(?:^|\D)15\d", raw):
+            wa = norm_ar(raw)
+            if wa and wa.startswith("549"):
                 lead["whatsapp"] = wa
                 lead["wa_link"] = "https://wa.me/" + wa
         score(lead)
