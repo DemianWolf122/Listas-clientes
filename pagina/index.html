@@ -85,7 +85,8 @@
   .mscores{display:flex;gap:18px;margin:10px 0;font-size:13px;color:var(--muted2)} .mscores b{color:var(--txt);font-size:18px;display:block}
   .reason{background:var(--card2);border-left:3px solid var(--line);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px;color:#c6d2ea}
   .msgblock{margin-bottom:12px}
-  .msghead{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+  .msghead{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:8px}
+  .msgacts{display:flex;gap:6px;align-items:center;flex-shrink:0}
   .msghead .mlbl{margin:0}
   .msgbox{background:var(--bg2);border:1px dashed var(--line);border-radius:10px;padding:11px 13px;font-size:13px;color:#bccdec;white-space:pre-wrap;line-height:1.5}
   .fuentes{font-size:12px;color:var(--muted2);margin-top:10px}
@@ -199,6 +200,20 @@ function mailHref(l){
   const body=l.email_cuerpo||l.mensaje_whatsapp||'';
   return `mailto:${esc(l.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
 }
+function vcardHref(l){
+  const tel=l.whatsapp?('+'+l.whatsapp):(l.phone||'');
+  let v='BEGIN:VCARD\nVERSION:3.0\nFN:'+(l.name||'Lead')+'\nORG:'+(l.name||'')+'\n';
+  if(tel)v+='TEL;TYPE=CELL:'+tel+'\n';
+  if(l.phone&&l.phone!==tel)v+='TEL;TYPE=WORK:'+l.phone+'\n';
+  v+='END:VCARD';
+  return 'data:text/vcard;charset=utf-8,'+encodeURIComponent(v);
+}
+const vcardName=l=>(l.name||'contacto').replace(/[^\w\-]+/g,'_').slice(0,40);
+function sendBtn(txt,l){return l.whatsapp?`<a class="btn wa" style="padding:6px 10px;font-size:11.5px" target="_blank" href="https://wa.me/${esc(l.whatsapp)}?text=${encodeURIComponent(txt)}">💬 Enviar</a>`:'';}
+function msgBlock(lbl,txt,key,l,waSend){
+  const idAttr=(key==='wa'||key==='mail')?` data-id="${l.id}"`:'';
+  return `<div class="msgblock"><div class="msghead"><span class="mlbl">${lbl}</span><span class="msgacts">${waSend?sendBtn(txt,l):''}<button class="btn ghost" data-copy="${key}"${idAttr}>📋 Copiar</button></span></div><div class="msgbox">${esc(txt)}</div></div>`;
+}
 function contactBtns(l){
   let b='';
   if(l.whatsapp)b+=`<a class="btn wa" target="_blank" href="${waHref(l)}">💬 WhatsApp</a>`;
@@ -208,6 +223,7 @@ function contactBtns(l){
   if(l.facebook)b+=`<a class="btn" target="_blank" href="${esc(l.facebook)}">📘 Facebook</a>`;
   if(l.website)b+=`<a class="btn" target="_blank" href="${esc(l.website)}">🌐 Web</a>`;
   b+=`<a class="btn" target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent([l.name,l.address,l.city].filter(Boolean).join(' '))}">📍 Maps</a>`;
+  if(l.whatsapp||l.phone)b+=`<a class="btn" href="${vcardHref(l)}" download="${vcardName(l)}.vcf">💾 Guardar contacto</a>`;
   return b;
 }
 function emailText(l){const s=l.email_asunto||'',b=l.email_cuerpo||'';if(!s&&!b)return '';return (s?('Asunto: '+s+'\n\n'):'')+b;}
@@ -237,10 +253,10 @@ function render(){
 function modalContent(l){
   const em=emailText(l);
   let msgs='';
-  if(l.mensaje_whatsapp)msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">WhatsApp</span><button class="btn ghost" data-copy="wa" data-id="${l.id}">📋 Copiar</button></div><div class="msgbox">${esc(l.mensaje_whatsapp)}</div></div>`;
-  if(em)msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">Mail</span><button class="btn ghost" data-copy="mail" data-id="${l.id}">📋 Copiar</button></div><div class="msgbox">${esc(em)}</div></div>`;
-  msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">Nuestros trabajos</span><button class="btn ghost" data-copy="trabajos">📋 Copiar</button></div><div class="msgbox">${esc(MSG_TRABAJOS)}</div></div>`;
-  msgs+=`<div class="msgblock"><div class="msghead"><span class="mlbl">Saludo cordial</span><button class="btn ghost" data-copy="saludo">📋 Copiar</button></div><div class="msgbox">${esc(MSG_SALUDO)}</div></div>`;
+  if(l.mensaje_whatsapp)msgs+=msgBlock('WhatsApp',l.mensaje_whatsapp,'wa',l,true);
+  if(em)msgs+=msgBlock('Mail',em,'mail',l,false);
+  msgs+=msgBlock('Nuestros trabajos',MSG_TRABAJOS,'trabajos',l,true);
+  msgs+=msgBlock('Saludo cordial',MSG_SALUDO,'saludo',l,true);
   return `<button class="mclose" id="mclose">✕</button>
     <h2 class="mname">${esc(l.name)}</h2>
     <div class="mbadges">${badges(l)}${l.tanda?`<span class="tanda">🏷️ ${esc(l.tanda)}</span>`:''}</div>
