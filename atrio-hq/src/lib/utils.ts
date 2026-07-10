@@ -46,6 +46,12 @@ export function timeOfDay(d?: string | Date | null): string {
   return format(toDate(d), "HH:mm");
 }
 
+/** "14:30:00" o "14:30" → "14:30" (para columnas Postgres `time`). */
+export function hm(t?: string | null): string {
+  if (!t) return "";
+  return t.slice(0, 5);
+}
+
 /** "hace 3 min", "hace 2 h". */
 export function relativeTime(d?: string | Date | null): string {
   if (!d) return "";

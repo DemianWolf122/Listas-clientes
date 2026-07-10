@@ -7,6 +7,7 @@ import {
   Home,
   ListChecks,
   CalendarDays,
+  CalendarClock,
   Search,
   Plus,
   ChevronDown,
@@ -14,6 +15,7 @@ import {
   Folder,
   FileText,
   MessageSquare,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUI } from "@/stores/ui";
@@ -78,6 +80,13 @@ function SidebarInner() {
             icon={<ListChecks size={16} />}
             label="Mis Tareas"
             active={isActive("/mis-tareas")}
+            onClick={close}
+          />
+          <NavItem
+            href="/agenda"
+            icon={<CalendarClock size={16} />}
+            label="Agenda"
+            active={isActive("/agenda")}
             onClick={close}
           />
           <NavItem
@@ -152,6 +161,16 @@ function SidebarInner() {
           <DocTree onNavigate={close} />
         </Group>
       </nav>
+
+      <div className="border-t border-hairline p-2">
+        <NavItem
+          href="/configuracion"
+          icon={<Settings size={16} />}
+          label="Configuración"
+          active={isActive("/configuracion")}
+          onClick={close}
+        />
+      </div>
 
       <NewProjectDialog open={newProject} onOpenChange={setNewProject} />
       <NewChannelDialog open={newChannel} onOpenChange={setNewChannel} />

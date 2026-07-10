@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Check, FolderOpen } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Button } from "@/components/ui/Button";
-import { AssigneeControl, DueDateControl, PriorityControl } from "./controls";
+import { AssigneeControl, DeadlineControl, ScheduleControl, PriorityControl } from "./controls";
 import { useProjects } from "@/hooks/projects";
 import { useCreateTask } from "@/hooks/tasks";
 import { useIdentity } from "@/stores/identity";
@@ -31,6 +31,12 @@ export function QuickAddTask({
   const [project, setProject] = useState<string | null>(projectId ?? null);
   const [assignee, setAssignee] = useState<string | null>(me);
   const [due, setDue] = useState<string | null>(null);
+  const [dueTime, setDueTime] = useState<string | null>(null);
+  const [sched, setSched] = useState<{ date: string | null; start: string | null; end: string | null }>({
+    date: null,
+    start: null,
+    end: null,
+  });
   const [priority, setPriority] = useState<Priority>("none");
 
   async function submit() {
@@ -41,6 +47,10 @@ export function QuickAddTask({
       section_id: sectionId ?? null,
       assignee_id: assignee,
       due_date: due,
+      due_time: dueTime,
+      start_date: sched.date,
+      start_time: sched.start,
+      end_time: sched.end,
       priority,
     });
     toast.success("Tarea creada ✍️");
@@ -83,8 +93,18 @@ export function QuickAddTask({
           <Field label="Responsable">
             <AssigneeControl value={assignee} onChange={setAssignee} />
           </Field>
-          <Field label="Fecha">
-            <DueDateControl value={due} onChange={setDue} />
+          <Field label="Entrega">
+            <DeadlineControl
+              date={due}
+              time={dueTime}
+              onChange={(v) => {
+                setDue(v.date);
+                setDueTime(v.time);
+              }}
+            />
+          </Field>
+          <Field label="Agenda">
+            <ScheduleControl date={sched.date} start={sched.start} end={sched.end} onChange={setSched} />
           </Field>
           <Field label="Prioridad">
             <PriorityControl value={priority} onChange={setPriority} />

@@ -13,15 +13,16 @@ export const metadata: Metadata = {
   title: "HQ de Atrio",
   description:
     "El cuartel general de Atrio Studio — tareas, chat, docs y agenda, todo en un solo lugar.",
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>",
-  },
+  applicationName: "Atrio HQ",
+  appleWebApp: { capable: true, title: "Atrio HQ", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

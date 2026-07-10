@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { StatusCheckbox, PriorityDot, DueChip, TagChips } from "./controls";
+import { StatusCheckbox, PriorityDot, DueChip, ScheduleChip, TagChips } from "./controls";
 import { useSections } from "@/hooks/projects";
 import { useProjectTasks, useToggleTask, useCreateTask, type TaskWithTags } from "@/hooks/tasks";
 import { useProfileMap } from "@/hooks/profiles";
@@ -82,8 +82,9 @@ export function TaskListRow({ task }: { task: TaskWithTags }) {
       <div className="hidden sm:block">
         <TagChips tags={task.tags} />
       </div>
+      <ScheduleChip date={task.start_date} start={task.start_time} end={task.end_time} />
       <PriorityDot value={task.priority} />
-      <DueChip value={task.due_date} status={task.status} />
+      <DueChip value={task.due_date} status={task.status} time={task.due_time} />
       {assignee ? <Avatar profile={assignee} size={20} /> : <span className="h-5 w-5" />}
     </div>
   );
