@@ -2,7 +2,7 @@
 
 import { MessageSquare, GitBranch } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { StatusCheckbox, PriorityDot, DueChip, TagChips } from "./controls";
+import { StatusCheckbox, PriorityDot, DueChip, ScheduleChip, TagChips } from "./controls";
 import { useProfileMap } from "@/hooks/profiles";
 import { useToggleTask } from "@/hooks/tasks";
 import { useUI } from "@/stores/ui";
@@ -52,9 +52,10 @@ export function TaskCard({ task, dragging }: { task: TaskWithTags; dragging?: bo
         </div>
       )}
 
-      <div className="mt-2 flex items-center gap-2 pl-6">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-6">
         <PriorityDot value={task.priority} />
-        <DueChip value={task.due_date} status={task.status} />
+        <ScheduleChip date={task.start_date} start={task.start_time} end={task.end_time} />
+        <DueChip value={task.due_date} status={task.status} time={task.due_time} />
         <div className="flex-1" />
         {assignee && <Avatar profile={assignee} size={20} />}
       </div>

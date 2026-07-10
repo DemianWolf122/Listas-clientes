@@ -92,7 +92,10 @@ export interface Database {
           priority: string;
           assignee_id: string | null;
           due_date: string | null;
+          due_time: string | null;
           start_date: string | null;
+          start_time: string | null;
+          end_time: string | null;
           completed_at: string | null;
           sort_order: number;
           created_by: string | null;
@@ -110,7 +113,10 @@ export interface Database {
           priority?: string;
           assignee_id?: string | null;
           due_date?: string | null;
+          due_time?: string | null;
           start_date?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
           completed_at?: string | null;
           sort_order?: number;
           created_by?: string | null;

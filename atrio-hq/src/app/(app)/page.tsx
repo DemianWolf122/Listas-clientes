@@ -12,7 +12,7 @@ import { useProjects } from "@/hooks/projects";
 import { useUI } from "@/stores/ui";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { StatusCheckbox, PriorityDot, DueChip } from "@/components/tasks/controls";
+import { StatusCheckbox, PriorityDot, DueChip, ScheduleChip } from "@/components/tasks/controls";
 import { useToggleTask } from "@/hooks/tasks";
 import { usePrefs } from "@/stores/ui";
 import { fireConfetti } from "@/lib/confetti";
@@ -229,8 +229,9 @@ function HomeTaskRow({ task }: { task: any }) {
       />
       <span className="min-w-0 flex-1 truncate text-[14px] text-ink">{task.title}</span>
       {task.project && <span className="hidden text-sm sm:inline">{task.project.emoji}</span>}
+      <ScheduleChip date={task.start_date} start={task.start_time} end={task.end_time} />
       <PriorityDot value={task.priority} />
-      <DueChip value={task.due_date} status={task.status} />
+      <DueChip value={task.due_date} status={task.status} time={task.due_time} />
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { Segmented } from "@/components/ui/Segmented";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonRows } from "@/components/ui/Skeleton";
-import { StatusCheckbox, PriorityDot, DueChip, TagChips } from "@/components/tasks/controls";
+import { StatusCheckbox, PriorityDot, DueChip, ScheduleChip, TagChips } from "@/components/tasks/controls";
 import { StatusBoard } from "@/components/tasks/StatusBoard";
 import { fireConfetti } from "@/lib/confetti";
 import { playChime } from "@/lib/sound";
@@ -152,8 +152,9 @@ function MyTaskRow({ task }: { task: TaskWithTags }) {
       <div className="hidden sm:block">
         <TagChips tags={task.tags} />
       </div>
+      <ScheduleChip date={task.start_date} start={task.start_time} end={task.end_time} />
       <PriorityDot value={task.priority} />
-      <DueChip value={task.due_date} status={task.status} />
+      <DueChip value={task.due_date} status={task.status} time={task.due_time} />
     </div>
   );
 }

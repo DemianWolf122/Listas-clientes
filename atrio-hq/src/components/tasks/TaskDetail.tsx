@@ -7,7 +7,15 @@ import { MoreHorizontal, Trash2, ExternalLink, Plus, CornerDownRight } from "luc
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { Avatar } from "@/components/ui/Avatar";
 import { Spinner } from "@/components/ui/Spinner";
-import { StatusCheckbox, AssigneeControl, DueDateControl, PriorityControl, TagControl, TagChips } from "./controls";
+import {
+  StatusCheckbox,
+  AssigneeControl,
+  DeadlineControl,
+  ScheduleControl,
+  PriorityControl,
+  TagControl,
+  TagChips,
+} from "./controls";
 import {
   useTask,
   useSubtasks,
@@ -180,8 +188,20 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
               onChange={(v) => update.mutate({ id, assignee_id: v, notifyAssignee: true })}
             />
           </Prop>
-          <Prop label="Fecha">
-            <DueDateControl value={task.due_date} onChange={(v) => update.mutate({ id, due_date: v })} />
+          <Prop label="Entrega">
+            <DeadlineControl
+              date={task.due_date}
+              time={task.due_time}
+              onChange={(v) => update.mutate({ id, due_date: v.date, due_time: v.time })}
+            />
+          </Prop>
+          <Prop label="Agenda">
+            <ScheduleControl
+              date={task.start_date}
+              start={task.start_time}
+              end={task.end_time}
+              onChange={(v) => update.mutate({ id, start_date: v.date, start_time: v.start, end_time: v.end })}
+            />
           </Prop>
           <Prop label="Prioridad">
             <PriorityControl value={task.priority} onChange={(v) => update.mutate({ id, priority: v })} />

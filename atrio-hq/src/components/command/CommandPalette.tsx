@@ -7,6 +7,7 @@ import {
   Home,
   ListChecks,
   CalendarDays,
+  CalendarClock,
   Plus,
   FileText,
   Hash,
@@ -14,6 +15,7 @@ import {
   CheckSquare,
   MessageSquare,
   UserRoundCog,
+  Settings,
 } from "lucide-react";
 import { useUI } from "@/stores/ui";
 import { useIdentity } from "@/stores/identity";
@@ -89,8 +91,14 @@ export function CommandPalette() {
           <Item value="nav-mytasks" icon={<ListChecks size={15} />} onSelect={() => run(() => router.push("/mis-tareas"))}>
             Ir a Mis Tareas
           </Item>
+          <Item value="nav-agenda" icon={<CalendarClock size={15} />} onSelect={() => run(() => router.push("/agenda"))}>
+            Ir a la Agenda
+          </Item>
           <Item value="nav-cal" icon={<CalendarDays size={15} />} onSelect={() => run(() => router.push("/calendario"))}>
             Ir al Calendario
+          </Item>
+          <Item value="nav-config" icon={<Settings size={15} />} onSelect={() => run(() => router.push("/configuracion"))}>
+            Ir a Configuración
           </Item>
           <Item value="act-switch" icon={<UserRoundCog size={15} />} onSelect={() => run(clearIdentity)}>
             Cambiar de persona

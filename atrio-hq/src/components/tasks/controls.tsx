@@ -2,13 +2,27 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Check, Flag, CalendarDays, UserCircle2, Tag as TagIcon, Plus, X } from "lucide-react";
+import {
+  Check,
+  Flag,
+  CalendarDays,
+  CalendarClock,
+  CalendarRange,
+  Clock,
+  UserCircle2,
+  Tag as TagIcon,
+  Plus,
+  X,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Avatar } from "@/components/ui/Avatar";
 import { useProfiles } from "@/hooks/profiles";
 import { useTags, useCreateTag, useToggleTaskTag } from "@/hooks/tags";
 import { PRIORITY, PRIORITY_ORDER, type Priority } from "@/lib/constants";
-import { cn, humanDate, isOverdue, readableText } from "@/lib/utils";
+import { cn, humanDate, isOverdue, readableText, hm } from "@/lib/utils";
+
+const timeInputCls =
+  "rounded-md border border-hairline bg-canvas px-2 py-1 text-[13px] outline-none focus:border-accent tnum";
 import type { Tag } from "@/lib/types/database";
 
 function Row({
@@ -146,7 +160,15 @@ export function AssigneeControl({
 }
 
 /* ---------------- Due date ---------------- */
-export function DueChip({ value, status }: { value: string | null; status?: string }) {
+export function DueChip({
+  value,
+  status,
+  time,
+}: {
+  value: string | null;
+  status?: string;
+  time?: string | null;
+}) {
   if (!value) return null;
   const overdue = isOverdue(value, status);
   return (
@@ -158,6 +180,19 @@ export function DueChip({ value, status }: { value: string | null; status?: stri
     >
       <CalendarDays size={11} />
       {humanDate(value)}
+      {time && <span className="opacity-80">· {hm(time)}</span>}
+    </span>
+  );
+}
+
+/** Chip del bloque agendado (para tarjetas / filas). */
+export function ScheduleChip({ date, start, end }: { date: string | null; start: string | null; end: string | null }) {
+  if (!date || !start) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-1.5 py-0.5 text-2xs font-medium text-accent tnum">
+      <Clock size={11} />
+      {hm(start)}
+      {end && `–${hm(end)}`}
     </span>
   );
 }
@@ -224,6 +259,148 @@ function Quick({ label, onClick }: { label: string; onClick: () => void }) {
     >
       {label}
     </button>
+  );
+}
+
+function plusDays(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+/** Entrega: fecha + hora límite. */
+export function DeadlineControl({
+  date,
+  time,
+  onChange,
+}: {
+  date: string | null;
+  time: string | null;
+  onChange: (v: { date: string | null; time: string | null }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const setDate = (d: Date) => onChange({ date: format(d, "yyyy-MM-dd"), time });
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] transition-colors hover:bg-surface-hover">
+          <CalendarClock size={14} className="text-ink-tertiary" />
+          <span className={date ? "text-ink" : "text-ink-secondary"}>
+            {date ? `${humanDate(date)}${time ? ` · ${hm(time)}` : ""}` : "Sin fecha"}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[240px] p-2">
+        <div className="grid grid-cols-2 gap-1">
+          <Quick label="Hoy" onClick={() => setDate(new Date())} />
+          <Quick label="Mañana" onClick={() => setDate(plusDays(1))} />
+          <Quick label="En 3 días" onClick={() => setDate(plusDays(3))} />
+          <Quick label="En 1 semana" onClick={() => setDate(plusDays(7))} />
+        </div>
+        <input
+          type="date"
+          value={date ?? ""}
+          onChange={(e) => onChange({ date: e.target.value || null, time: e.target.value ? time : null })}
+          className={cn(timeInputCls, "mt-2 w-full")}
+        />
+        {date && (
+          <div className="mt-1.5 flex items-center gap-2">
+            <Clock size={14} className="text-ink-tertiary" />
+            <input
+              type="time"
+              value={hm(time)}
+              onChange={(e) => onChange({ date, time: e.target.value || null })}
+              className={cn(timeInputCls, "flex-1")}
+            />
+            {time && (
+              <button onClick={() => onChange({ date, time: null })} className="icon-btn h-7 w-7">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        )}
+        {date && (
+          <button
+            onClick={() => {
+              onChange({ date: null, time: null });
+              setOpen(false);
+            }}
+            className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-md py-1.5 text-2xs text-priority-urgent transition-colors hover:bg-priority-urgent/10"
+          >
+            <X size={12} /> Quitar fecha
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Agenda: bloque de trabajo (fecha + de tal hora a tal hora). */
+export function ScheduleControl({
+  date,
+  start,
+  end,
+  onChange,
+}: {
+  date: string | null;
+  start: string | null;
+  end: string | null;
+  onChange: (v: { date: string | null; start: string | null; end: string | null }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const label = date
+    ? start
+      ? `${humanDate(date)} · ${hm(start)}${end ? `–${hm(end)}` : ""}`
+      : humanDate(date)
+    : "Sin agendar";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] transition-colors hover:bg-surface-hover">
+          <CalendarRange size={14} className="text-ink-tertiary" />
+          <span className={date ? "text-ink" : "text-ink-secondary"}>{label}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[256px] p-2">
+        <div className="grid grid-cols-2 gap-1">
+          <Quick label="Hoy" onClick={() => onChange({ date: format(new Date(), "yyyy-MM-dd"), start, end })} />
+          <Quick label="Mañana" onClick={() => onChange({ date: format(plusDays(1), "yyyy-MM-dd"), start, end })} />
+        </div>
+        <input
+          type="date"
+          value={date ?? ""}
+          onChange={(e) => onChange({ date: e.target.value || null, start, end })}
+          className={cn(timeInputCls, "mt-2 w-full")}
+        />
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <Clock size={14} className="shrink-0 text-ink-tertiary" />
+          <input
+            type="time"
+            value={hm(start)}
+            onChange={(e) => onChange({ date, start: e.target.value || null, end })}
+            className={cn(timeInputCls, "min-w-0 flex-1")}
+          />
+          <span className="text-ink-tertiary">–</span>
+          <input
+            type="time"
+            value={hm(end)}
+            onChange={(e) => onChange({ date, start, end: e.target.value || null })}
+            className={cn(timeInputCls, "min-w-0 flex-1")}
+          />
+        </div>
+        {date && (
+          <button
+            onClick={() => {
+              onChange({ date: null, start: null, end: null });
+              setOpen(false);
+            }}
+            className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-md py-1.5 text-2xs text-priority-urgent transition-colors hover:bg-priority-urgent/10"
+          >
+            <X size={12} /> Quitar del día
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
