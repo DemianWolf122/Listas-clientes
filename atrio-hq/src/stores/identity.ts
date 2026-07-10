@@ -9,7 +9,6 @@ import { persist } from "zustand/middleware";
  */
 interface IdentityState {
   profileId: string | null;
-  _hydrated: boolean;
   setProfileId: (id: string | null) => void;
   clear: () => void;
 }
@@ -18,15 +17,9 @@ export const useIdentity = create<IdentityState>()(
   persist(
     (set) => ({
       profileId: null,
-      _hydrated: false,
       setProfileId: (id) => set({ profileId: id }),
       clear: () => set({ profileId: null }),
     }),
-    {
-      name: "atrio-identity",
-      onRehydrateStorage: () => (state) => {
-        if (state) state._hydrated = true;
-      },
-    }
+    { name: "atrio-identity" }
   )
 );

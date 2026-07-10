@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useProfiles } from "@/hooks/profiles";
 import { useIdentity } from "@/stores/identity";
 import { useUI } from "@/stores/ui";
@@ -20,7 +20,8 @@ function Splash() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const hydrated = useIdentity((s) => s._hydrated);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const profileId = useIdentity((s) => s.profileId);
   const { data: profiles } = useProfiles();
   const toggleCommand = useUI((s) => s.toggleCommand);
@@ -42,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggleCommand, toggleSidebar]);
 
-  if (!hydrated) return <Splash />;
+  if (!mounted) return <Splash />;
 
   const me = profiles?.find((p) => p.id === profileId) ?? null;
   const needsSelection = !profileId || (profiles !== undefined && !me);

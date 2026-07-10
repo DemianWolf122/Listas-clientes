@@ -150,7 +150,7 @@ export function MessageItem({
 
       {/* toolbar hover */}
       {!pending && !editing && (
-        <div className="absolute -top-3 right-2 hidden items-center gap-0.5 rounded-lg border border-hairline bg-canvas p-0.5 shadow-popover group-hover:flex">
+        <div className="touch-reveal-flex absolute -top-3 right-2 items-center gap-0.5 rounded-lg border border-hairline bg-canvas p-0.5 shadow-popover">
           {QUICK_REACTIONS.slice(0, 3).map((e) => (
             <button key={e} onClick={() => toggleReaction(e)} className="flex h-6 w-6 items-center justify-center rounded-md text-sm hover:bg-surface-hover">
               {e}

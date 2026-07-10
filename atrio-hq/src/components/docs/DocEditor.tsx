@@ -98,10 +98,10 @@ function Editor({ doc }: { doc: Doc }) {
           onBlur={commitTitle}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
           placeholder="Sin título"
-          className="mt-2 w-full border-none bg-transparent text-[40px] font-bold leading-tight tracking-tight text-ink outline-none placeholder:text-ink-tertiary"
+          className="mt-2 w-full border-none bg-transparent text-[30px] font-bold leading-tight tracking-tight text-ink outline-none placeholder:text-ink-tertiary sm:text-[40px]"
         />
 
-        <div className="mt-4 -ml-[54px]">
+        <div className="mt-4 sm:-ml-[54px]">
           <BlockNoteView
             editor={editor}
             theme={resolvedTheme === "dark" ? "dark" : "light"}

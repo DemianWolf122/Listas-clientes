@@ -224,7 +224,7 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
                 </span>
                 <button
                   onClick={() => del.mutate(s.id)}
-                  className="icon-btn h-6 w-6 opacity-0 group-hover:opacity-100"
+                  className="icon-btn h-6 w-6 touch-reveal"
                 >
                   <Trash2 size={13} />
                 </button>

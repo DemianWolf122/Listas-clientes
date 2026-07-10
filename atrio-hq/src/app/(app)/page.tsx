@@ -53,7 +53,7 @@ export default function HomePage() {
             <h1 className="text-2xl font-semibold tracking-tight text-balance">
               {greeting()}, {profile?.name} 👋
             </h1>
-            <p className="mt-0.5 text-sm capitalize text-ink-secondary">{humanDateLong(new Date())}</p>
+            <p className="mt-0.5 text-sm text-ink-secondary first-letter:uppercase">{humanDateLong(new Date())}</p>
           </div>
           {other && <PresenceCard other={other} meta={otherMeta} />}
         </div>

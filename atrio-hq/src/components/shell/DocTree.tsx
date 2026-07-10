@@ -85,7 +85,7 @@ export function DocTree({ onNavigate }: { onNavigate?: () => void }) {
             </button>
             <button
               onClick={() => addChild(node.id, node.project_id)}
-              className="icon-btn h-5 w-5 opacity-0 group-hover/row:opacity-100"
+              className="icon-btn h-5 w-5 touch-reveal"
               title="Agregar subpágina"
             >
               <Plus size={13} />

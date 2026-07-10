@@ -214,11 +214,53 @@ body {
   text-decoration: line-through;
 }
 
+.atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 640px) {
+  .atrio-calendar {
+    padding: 8px;
+  }
+  .atrio-calendar .fc .fc-toolbar-title {
+    font-size: 0.95rem;
+  }
+  .atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
+    justify-content: space-between;
+  }
+}
+
 /* ---------- BlockNote ---------- */
 .bn-container,
 .bn-editor {
   font-family: var(--font-inter), sans-serif;
   background: transparent !important;
+}
+
+/* ---------- Reveal al hover (desktop) / siempre visible al toque (mobile) ----------
+   En pantallas táctiles no hay hover, así que estos controles quedan visibles. */
+.touch-reveal-flex {
+  display: flex;
+}
+@media (hover: hover) and (pointer: fine) {
+  .touch-reveal {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .group:hover .touch-reveal,
+  .group\/row:hover .touch-reveal,
+  .group\/head:hover .touch-reveal,
+  .group\/card:hover .touch-reveal,
+  .touch-reveal:focus-visible {
+    opacity: 1;
+  }
+  .touch-reveal-flex {
+    display: none;
+  }
+  .group:hover .touch-reveal-flex {
+    display: flex;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

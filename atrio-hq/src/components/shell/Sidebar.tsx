@@ -241,7 +241,7 @@ function Group({
         {onAdd && (
           <button
             onClick={onAdd}
-            className="icon-btn h-5 w-5 opacity-0 group-hover/head:opacity-100"
+            className="icon-btn h-5 w-5 touch-reveal"
             title={`Agregar en ${label}`}
           >
             <Plus size={14} />
