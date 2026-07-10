@@ -1,0 +1,274 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas: 255 255 255;
+  --surface: 247 247 245;
+  --surface-hover: 241 241 239;
+  --surface-active: 235 235 233;
+  --text: 25 25 25;
+  --text-secondary: 120 119 116;
+  --text-tertiary: 155 155 152;
+  --border: 237 237 236;
+  --border-strong: 227 227 224;
+  --accent: 35 131 226;
+  --accent-soft: 224 238 252;
+  --accent-fg: 255 255 255;
+}
+
+.dark {
+  --canvas: 25 25 25;
+  --surface: 32 32 31;
+  --surface-hover: 43 43 42;
+  --surface-active: 50 50 48;
+  --text: 237 237 235;
+  --text-secondary: 158 158 154;
+  --text-tertiary: 120 120 116;
+  --border: 48 48 46;
+  --border-strong: 62 62 60;
+  --accent: 45 143 240;
+  --accent-soft: 30 52 74;
+  --accent-fg: 255 255 255;
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: rgb(var(--canvas));
+  color: rgb(var(--text));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.22);
+}
+
+/* Scrollbars sutiles, estilo Notion */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--text) / 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--text) / 0.16);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--text) / 0.28);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@layer components {
+  /* fila interactiva del sidebar / listas */
+  .row-hover {
+    @apply transition-colors duration-150 hover:bg-surface-hover;
+  }
+  .hairline-b {
+    @apply border-b border-hairline;
+  }
+  /* botón fantasma reutilizable */
+  .icon-btn {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-surface-hover hover:text-ink;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .drag-none {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+}
+
+/* ---------- Command palette (cmdk) ---------- */
+[cmdk-overlay] {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgb(var(--text) / 0.25);
+  backdrop-filter: blur(1px);
+  animation: overlay-in 160ms ease-out;
+}
+.cmdk-root {
+  position: fixed;
+  z-index: 81;
+  top: 16vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92vw;
+  max-width: 620px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--canvas));
+  box-shadow: 0 12px 48px rgba(15, 15, 15, 0.18);
+  animation: scale-in 140ms ease-out;
+}
+.cmdk-group {
+  padding: 4px 2px;
+}
+[cmdk-group-heading] {
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgb(var(--text-tertiary));
+}
+.cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: rgb(var(--text));
+  cursor: pointer;
+  user-select: none;
+}
+.cmdk-item[data-selected="true"] {
+  background: rgb(var(--surface-hover));
+}
+
+/* ---------- FullCalendar → tokens de Atrio ---------- */
+.atrio-calendar .fc {
+  --fc-border-color: rgb(var(--border));
+  --fc-today-bg-color: rgb(var(--accent-soft) / 0.4);
+  --fc-neutral-bg-color: rgb(var(--surface));
+  --fc-page-bg-color: transparent;
+  --fc-button-bg-color: rgb(var(--surface));
+  --fc-button-border-color: rgb(var(--border));
+  --fc-button-text-color: rgb(var(--text));
+  --fc-button-hover-bg-color: rgb(var(--surface-hover));
+  --fc-button-hover-border-color: rgb(var(--border-strong));
+  --fc-button-active-bg-color: rgb(var(--accent));
+  --fc-button-active-border-color: rgb(var(--accent));
+  font-family: var(--font-inter), sans-serif;
+  font-size: 13px;
+}
+.atrio-calendar .fc .fc-toolbar-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: capitalize;
+}
+.atrio-calendar .fc .fc-button {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+  box-shadow: none;
+  text-transform: capitalize;
+}
+.atrio-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+.atrio-calendar .fc .fc-button-primary:not(:disabled):active {
+  color: #fff;
+}
+.atrio-calendar .fc .fc-col-header-cell-cushion,
+.atrio-calendar .fc .fc-daygrid-day-number {
+  color: rgb(var(--text-secondary));
+  text-decoration: none;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.atrio-calendar .fc .fc-event {
+  border: none;
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.atrio-calendar .fc-done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 640px) {
+  .atrio-calendar {
+    padding: 8px;
+  }
+  .atrio-calendar .fc .fc-toolbar-title {
+    font-size: 0.95rem;
+  }
+  .atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
+    justify-content: space-between;
+  }
+}
+
+/* ---------- BlockNote ---------- */
+.bn-container,
+.bn-editor {
+  font-family: var(--font-inter), sans-serif;
+  background: transparent !important;
+}
+
+/* ---------- Reveal al hover (desktop) / siempre visible al toque (mobile) ----------
+   En pantallas táctiles no hay hover, así que estos controles quedan visibles. */
+.touch-reveal-flex {
+  display: flex;
+}
+@media (hover: hover) and (pointer: fine) {
+  .touch-reveal {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .group:hover .touch-reveal,
+  .group\/row:hover .touch-reveal,
+  .group\/head:hover .touch-reveal,
+  .group\/card:hover .touch-reveal,
+  .touch-reveal:focus-visible {
+    opacity: 1;
+  }
+  .touch-reveal-flex {
+    display: none;
+  }
+  .group:hover .touch-reveal-flex {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
