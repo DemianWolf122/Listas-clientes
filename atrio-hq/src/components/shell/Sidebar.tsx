@@ -16,6 +16,7 @@ import {
   FileText,
   MessageSquare,
   Settings,
+  PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUI } from "@/stores/ui";
@@ -34,6 +35,7 @@ function SidebarInner() {
   const router = useRouter();
   const setCommandOpen = useUI((s) => s.setCommandOpen);
   const setMobileNav = useUI((s) => s.setMobileNav);
+  const toggleSidebar = useUI((s) => s.toggleSidebar);
   const me = useIdentity((s) => s.profileId);
 
   const { data: projects } = useProjects();
@@ -56,8 +58,18 @@ function SidebarInner() {
   return (
     <div className="flex h-full flex-col">
       {/* header + user */}
-      <div className="px-2.5 pt-2.5">
-        <UserChip />
+      <div className="flex items-center gap-1 px-2.5 pt-2.5">
+        <div className="min-w-0 flex-1">
+          <UserChip />
+        </div>
+        <button
+          onClick={toggleSidebar}
+          className="icon-btn hidden shrink-0 md:inline-flex"
+          title="Contraer barra lateral (⌘\)"
+          aria-label="Contraer barra lateral"
+        >
+          <PanelLeftClose size={16} />
+        </button>
       </div>
 
       {/* buscar */}
