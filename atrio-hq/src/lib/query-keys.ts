@@ -1,0 +1,43 @@
+/** Claves de TanStack Query centralizadas (evita typos y facilita invalidación). */
+export const qk = {
+  profiles: ["profiles"] as const,
+  projects: ["projects"] as const,
+  project: (id: string) => ["project", id] as const,
+  sections: (projectId: string) => ["sections", projectId] as const,
+  tasksByProject: (projectId: string) => ["tasks", "project", projectId] as const,
+  task: (id: string) => ["task", id] as const,
+  subtasks: (taskId: string) => ["subtasks", taskId] as const,
+  myTasks: ["my-tasks"] as const,
+  allTasks: ["all-tasks"] as const,
+  tags: ["tags"] as const,
+  taskTags: (taskId: string) => ["task-tags", taskId] as const,
+  channels: ["channels"] as const,
+  messages: (channelId: string) => ["messages", channelId] as const,
+  thread: (messageId: string) => ["thread", messageId] as const,
+  reactions: (messageId: string) => ["reactions", messageId] as const,
+  unread: ["unread"] as const,
+  docs: ["docs"] as const,
+  doc: (id: string) => ["doc", id] as const,
+  comments: (targetType: string, targetId: string) => ["comments", targetType, targetId] as const,
+  events: ["events"] as const,
+  notifications: ["notifications"] as const,
+  activity: ["activity"] as const,
+  home: ["home"] as const,
+};
+
+/** Prefijos a invalidar cuando llega un cambio realtime en una tabla. */
+export const INVALIDATION_MAP: Record<string, string[][]> = {
+  messages: [["messages"], ["thread"], ["unread"], ["channels"], ["search"]],
+  reactions: [["reactions"], ["messages"]],
+  channel_reads: [["unread"]],
+  channels: [["channels"], ["unread"]],
+  tasks: [["tasks"], ["task"], ["subtasks"], ["my-tasks"], ["all-tasks"], ["home"], ["activity"], ["events"], ["search"]],
+  sections: [["sections"], ["tasks"]],
+  projects: [["projects"], ["home"], ["search"]],
+  task_tags: [["task-tags"], ["tasks"], ["task"]],
+  tags: [["tags"], ["task-tags"]],
+  comments: [["comments"], ["activity"]],
+  events: [["events"], ["home"]],
+  notifications: [["notifications"]],
+  activity: [["activity"], ["home"]],
+};
