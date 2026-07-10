@@ -6,13 +6,12 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 import esLocale from "@fullcalendar/core/locales/es";
 import { format } from "date-fns";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, GripVertical } from "lucide-react";
 import { useAllTasks, useUpdateTask, useMyTasks } from "@/hooks/tasks";
 import { useEvents, useUpdateEvent } from "@/hooks/events";
 import { useIdentity } from "@/stores/identity";
 import { useUI } from "@/stores/ui";
 import { EventDialog } from "@/components/calendar/EventDialog";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { PriorityDot } from "@/components/tasks/controls";
 import type { CalEvent } from "@/lib/types/database";
 
@@ -44,6 +43,7 @@ export function AgendaView() {
         backgroundColor: t.project?.color ?? "#2383E2",
         borderColor: "transparent",
         classNames: t.status === "done" ? ["fc-done"] : [],
+        extendedProps: { kind: "task" },
       }));
     const evts = (events ?? []).map((e) => ({
       id: `evt:${e.id}`,
@@ -53,6 +53,7 @@ export function AgendaView() {
       allDay: e.all_day,
       backgroundColor: e.color ?? "#8E7CC3",
       borderColor: "transparent",
+      extendedProps: { kind: "event" },
     }));
     return [...taskBlocks, ...evts];
   }, [tasks, events]);
@@ -62,7 +63,6 @@ export function AgendaView() {
     [myTasks]
   );
 
-  // arrastre de tareas sin agendar hacia la grilla (desktop)
   useEffect(() => {
     if (!panelRef.current) return;
     const drag = new Draggable(panelRef.current, {
@@ -118,46 +118,54 @@ export function AgendaView() {
         end_time: e ? localTime(e) : null,
       });
     }
-    info.event.remove(); // el refetch la trae como bloque real
+    info.event.remove();
   }
 
   return (
     <div className="flex h-full min-h-0">
       {/* panel sin agendar (desktop) */}
-      <aside ref={panelRef} className="hidden w-60 shrink-0 flex-col border-r border-hairline md:flex">
-        <div className="border-b border-hairline px-3 py-2.5 text-[13px] font-semibold text-ink">
-          Sin agendar
-          <span className="ml-1.5 text-2xs font-normal text-ink-tertiary">{unscheduled.length}</span>
+      <aside ref={panelRef} className="hidden w-64 shrink-0 flex-col border-r border-hairline bg-surface/40 md:flex">
+        <div className="flex items-center gap-1.5 border-b border-hairline px-3 py-3">
+          <CalendarClock size={15} className="text-ink-tertiary" />
+          <span className="text-[13px] font-semibold text-ink">Por agendar</span>
+          {unscheduled.length > 0 && (
+            <span className="ml-auto rounded-full bg-surface-active px-1.5 text-2xs font-medium text-ink-secondary">
+              {unscheduled.length}
+            </span>
+          )}
         </div>
-        <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
+        <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2.5">
           {unscheduled.length === 0 ? (
-            <p className="px-1 py-4 text-2xs text-ink-tertiary">Todo tu trabajo tiene horario 🎯</p>
+            <p className="px-1 py-6 text-center text-2xs text-ink-tertiary">Nada pendiente para agendar 🎯</p>
           ) : (
             unscheduled.map((t) => (
               <div
                 key={t.id}
-                className="agenda-chip cursor-grab rounded-lg border border-hairline bg-canvas p-2 text-[13px] shadow-card active:cursor-grabbing"
+                className="agenda-chip group flex cursor-grab items-start gap-2 rounded-lg border border-hairline bg-canvas p-2.5 shadow-card transition-shadow hover:shadow-subtle active:cursor-grabbing"
                 data-task-id={t.id}
                 data-title={t.title}
                 onClick={() => openPeek({ kind: "task", id: t.id })}
               >
-                <div className="flex items-center gap-1.5">
-                  <PriorityDot value={t.priority} />
-                  <span className="line-clamp-2 flex-1 text-ink">{t.title}</span>
+                <GripVertical size={14} className="mt-0.5 shrink-0 text-ink-tertiary/60" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <PriorityDot value={t.priority} />
+                    <span className="line-clamp-2 text-[13px] leading-snug text-ink">{t.title}</span>
+                  </div>
+                  {t.project && <div className="mt-1 truncate text-2xs text-ink-tertiary">{t.project.emoji} {t.project.name}</div>}
                 </div>
-                {t.project && <div className="mt-1 text-2xs text-ink-tertiary">{t.project.emoji} {t.project.name}</div>}
               </div>
             ))
           )}
         </div>
-        <p className="border-t border-hairline px-3 py-2 text-[11px] leading-tight text-ink-tertiary">
-          Arrastrá una tarea a la grilla para agendarla.
+        <p className="flex items-center gap-1.5 border-t border-hairline px-3 py-2.5 text-[11px] leading-tight text-ink-tertiary">
+          <GripVertical size={12} /> Arrastrá una tarea a una franja horaria para bloquear tiempo.
         </p>
       </aside>
 
       {/* grilla horaria */}
-      <div className="atrio-calendar min-h-0 flex-1 p-3">
-        {/* strip mobile de tareas sin agendar */}
+      <div className="atrio-calendar relative min-h-0 flex-1 p-3">
+        {/* strip mobile por agendar */}
         {unscheduled.length > 0 && (
           <div className="mb-2 flex gap-2 overflow-x-auto pb-1 md:hidden">
             {unscheduled.map((t) => (
@@ -172,6 +180,7 @@ export function AgendaView() {
             ))}
           </div>
         )}
+
         <FullCalendar
           plugins={[timeGridPlugin, interactionPlugin]}
           initialView="timeGridDay"
@@ -179,15 +188,25 @@ export function AgendaView() {
           firstDay={1}
           nowIndicator
           allDaySlot={false}
-          slotMinTime="06:00:00"
-          slotMaxTime="24:00:00"
+          slotMinTime="07:00:00"
+          slotMaxTime="23:00:00"
           scrollTime="08:00:00"
+          slotDuration="00:30:00"
+          slotLabelInterval="01:00"
+          expandRows
           height="100%"
+          eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           headerToolbar={{ left: "prev,next today", center: "title", right: "timeGridDay,timeGridWeek" }}
           buttonText={{ today: "hoy", day: "día", week: "semana" }}
           events={fcEvents}
           editable
           droppable
+          eventContent={(arg: any) => (
+            <div className="flex h-full flex-col overflow-hidden px-1.5 py-0.5 leading-tight">
+              <span className="truncate text-[12px] font-semibold">{arg.event.title}</span>
+              {arg.timeText && <span className="text-[10px] opacity-85">{arg.timeText}</span>}
+            </div>
+          )}
           eventClick={onEventClick}
           eventDrop={applyEvent}
           eventResize={applyEvent}
@@ -198,6 +217,20 @@ export function AgendaView() {
             setDialogOpen(true);
           }}
         />
+
+        {/* estado vacío amable, sobre la grilla */}
+        {fcEvents.length === 0 && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center px-4">
+            <div className="pointer-events-auto max-w-sm rounded-2xl border border-hairline bg-canvas/95 px-5 py-4 text-center shadow-float backdrop-blur">
+              <div className="text-2xl">🗓️</div>
+              <p className="mt-1 text-[14px] font-medium text-ink">Tu día está libre</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">
+                Tocá una franja horaria para agendar algo, o arrastrá una tarea desde{" "}
+                <b className="text-ink">Por agendar</b> para bloquear el tiempo en que la vas a hacer.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <EventDialog open={dialogOpen} onOpenChange={setDialogOpen} event={editing} defaultDate={defaultDate} />

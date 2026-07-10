@@ -213,6 +213,33 @@ body {
   opacity: 0.5;
   text-decoration: line-through;
 }
+/* bloques del timeGrid (Agenda): legibles y redondeados */
+.atrio-calendar .fc-timegrid-event {
+  border-radius: 7px;
+  border: none;
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.08);
+}
+.atrio-calendar .fc-timegrid-event .fc-event-main {
+  padding: 0;
+  color: #fff;
+}
+.atrio-calendar .fc-timegrid-slot {
+  height: 2.4em;
+}
+.atrio-calendar .fc-timegrid-slot-label-cushion {
+  font-size: 11px;
+  color: rgb(var(--text-tertiary));
+}
+.atrio-calendar .fc-timegrid-now-indicator-line {
+  border-color: #e5624f;
+}
+.atrio-calendar .fc-timegrid-now-indicator-arrow {
+  border-color: #e5624f;
+  background: #e5624f;
+}
+.atrio-calendar .fc-timegrid-col.fc-day-today {
+  background: rgb(var(--accent-soft) / 0.25);
+}
 
 .atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
   flex-wrap: wrap;
