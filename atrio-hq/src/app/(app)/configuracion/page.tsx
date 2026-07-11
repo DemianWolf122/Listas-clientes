@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink } from "lucide-react";
+import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink, Bell, BellOff } from "lucide-react";
+import { getPushState, enablePush, disablePush, type PushState } from "@/lib/push";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { PWAInstallButton } from "@/components/settings/PWAInstallButton";
@@ -37,6 +38,15 @@ export default function SettingsPage() {
           hint="Tenela en la pantalla de inicio y abrila como una app, a pantalla completa."
         >
           <PWAInstallButton />
+        </Section>
+
+        {/* Notificaciones push */}
+        <Section
+          icon={<Bell size={16} />}
+          title="Notificaciones en el dispositivo"
+          hint="Recibí avisos como los de una app: cuando te asignan una tarea, te mencionan en el chat, o algo está por arrancar/vencer. Instalá la app antes para que anden en el iPhone/iPad."
+        >
+          <NotifButton meId={me?.id} />
         </Section>
 
         {/* Sincronizar calendario */}
@@ -194,6 +204,65 @@ function ThemeCard({ t, active, onClick }: { t: ThemeDef; active: boolean; onCli
         {active && <Check size={13} className="shrink-0 text-accent" />}
       </div>
     </button>
+  );
+}
+
+function NotifButton({ meId }: { meId?: string }) {
+  const [state, setState] = useState<PushState | "loading" | "working">("loading");
+  useEffect(() => {
+    getPushState().then(setState);
+  }, []);
+
+  if (state === "loading") return <div className="h-9" />;
+  if (state === "unsupported") {
+    return (
+      <p className="text-[13px] text-ink-secondary">
+        Este navegador no soporta notificaciones. En iPhone/iPad, primero <b>instalá la app</b> (arriba) y abrila desde
+        la pantalla de inicio.
+      </p>
+    );
+  }
+  if (state === "denied") {
+    return (
+      <p className="text-[13px] text-ink-secondary">
+        Bloqueaste las notificaciones para este sitio. Habilitalas desde los ajustes del navegador/sistema y volvé a
+        intentar.
+      </p>
+    );
+  }
+  if (state === "on") {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-2 rounded-lg bg-[#4FA373]/12 px-3 py-2 text-[13px] font-medium text-[#3d8560]">
+          <Check size={16} /> Notificaciones activadas
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            setState("working");
+            await disablePush();
+            setState("off");
+          }}
+        >
+          <BellOff size={14} /> Desactivar
+        </Button>
+      </div>
+    );
+  }
+  // off
+  return (
+    <Button
+      variant="primary"
+      disabled={state === "working" || !meId}
+      onClick={async () => {
+        if (!meId) return;
+        setState("working");
+        setState(await enablePush(meId));
+      }}
+    >
+      <Bell size={16} /> Activar notificaciones
+    </Button>
   );
 }
 

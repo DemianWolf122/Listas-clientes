@@ -57,8 +57,10 @@ export type Card = {
 /**
  * Tarjetas por día (fecha → cards ordenadas por horario) a partir de tareas y
  * eventos. Con `projectId`, filtra todo a ese proyecto (calendario de proyecto).
+ * Con `assigneeId`, solo las tareas de esa persona (la Agenda es personal);
+ * los eventos son compartidos y se muestran siempre.
  */
-export function useAgendaCards(projectId?: string): Record<string, Card[]> {
+export function useAgendaCards(projectId?: string, assigneeId?: string | null): Record<string, Card[]> {
   const { data: tasks } = useAllTasks();
   const { data: events } = useEvents();
 
@@ -69,6 +71,7 @@ export function useAgendaCards(projectId?: string): Record<string, Card[]> {
     };
     (tasks ?? [])
       .filter((t) => !projectId || t.project_id === projectId)
+      .filter((t) => !assigneeId || t.assignee_id === assigneeId)
       .forEach((t) => {
         const scheduled = Boolean(t.start_date && t.start_time);
         if (scheduled) {
@@ -121,7 +124,7 @@ export function useAgendaCards(projectId?: string): Record<string, Card[]> {
       });
     Object.values(map).forEach((arr) => arr.sort((a, b) => a.sort - b.sort));
     return map;
-  }, [tasks, events, projectId]);
+  }, [tasks, events, projectId, assigneeId]);
 }
 
 /* ---------------- Tarjeta rica (columnas de semana) ---------------- */

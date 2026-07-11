@@ -341,6 +341,24 @@ export interface Database {
         Update: Partial<Database["atrio_agenda"]["Tables"]["activity"]["Insert"]>;
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          profile_id: string | null;
+          endpoint: string;
+          subscription: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id?: string | null;
+          endpoint: string;
+          subscription: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["atrio_agenda"]["Tables"]["push_subscriptions"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
