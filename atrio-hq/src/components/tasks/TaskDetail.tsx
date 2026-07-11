@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MoreHorizontal, Trash2, ExternalLink, Plus, CornerDownRight, ArrowLeft } from "lucide-react";
+import { MoreHorizontal, Trash2, ExternalLink, Plus, CornerDownRight, ArrowLeft, Copy } from "lucide-react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { Avatar } from "@/components/ui/Avatar";
 import { Spinner } from "@/components/ui/Spinner";
@@ -31,7 +31,7 @@ import {
 import { useToggleTaskTag } from "@/hooks/tags";
 import { useComments, useAddComment } from "@/hooks/comments";
 import { useProfileMap, useCurrentProfile, useOther } from "@/hooks/profiles";
-import { usePrefs } from "@/stores/ui";
+import { usePrefs, useUI } from "@/stores/ui";
 import { useAnnounceViewing } from "@/components/providers/PresenceProvider";
 import { playChime } from "@/lib/sound";
 import { fireConfetti } from "@/lib/confetti";
@@ -50,6 +50,7 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
   const other = useOther();
   const profileMap = useProfileMap();
   const { sounds, celebrate } = usePrefs();
+  const openPeek = useUI((s) => s.openPeek);
 
   const { data: comments } = useComments("task", id);
   const addComment = useAddComment();
@@ -98,6 +99,25 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
       if (celebrate) fireConfetti();
       if (sounds) playChime();
     }
+  }
+  async function duplicateTask() {
+    const t = task!;
+    const copy = await createTask.mutateAsync({
+      title: `${t.title} (copia)`,
+      description: t.description,
+      project_id: t.project_id,
+      section_id: t.section_id,
+      assignee_id: t.assignee_id,
+      priority: t.priority,
+      due_date: t.due_date,
+      due_time: t.due_time,
+      start_date: t.start_date,
+      start_time: t.start_time,
+      end_time: t.end_time,
+    });
+    await Promise.all(t.tags.map((tag) => removeTag.mutateAsync({ taskId: copy.id, tagId: tag.id, on: true })));
+    toast.success("Tarea duplicada 📄");
+    openPeek({ kind: "task", id: copy.id });
   }
   async function addSubtask() {
     if (!newSub.trim()) return;
@@ -157,6 +177,9 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
                 <ExternalLink size={14} /> Ir al proyecto
               </MenuItem>
             )}
+            <MenuItem onSelect={duplicateTask}>
+              <Copy size={14} /> Duplicar tarea
+            </MenuItem>
             <MenuItem
               danger
               onSelect={() => {

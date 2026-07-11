@@ -54,7 +54,10 @@ export function CommandPalette() {
 
   const fProjects = (projects ?? []).filter((p) => !q || match(p.name));
   const fChannels = (channels ?? []).filter((c) => !q || match(c.name));
-  const fDocs = (docs ?? []).filter((d) => !q || match(d.title));
+  // docs por título (cache local) + docs por CONTENIDO (search_docs), sin duplicar
+  const titleDocs = (docs ?? []).filter((d) => !q || match(d.title));
+  const contentDocs = q ? (search?.docs ?? []).filter((d) => !titleDocs.some((t) => t.id === d.id)) : [];
+  const fDocs = [...titleDocs.slice(0, 8), ...contentDocs];
 
   return (
     <Command.Dialog
@@ -127,7 +130,7 @@ export function CommandPalette() {
 
         {fDocs.length > 0 && (
           <Command.Group heading="Docs" className="cmdk-group">
-            {fDocs.slice(0, 8).map((d) => (
+            {fDocs.map((d) => (
               <Item key={d.id} value={`doc-${d.id}`} icon={<span>{d.icon}</span>} onSelect={() => run(() => router.push(`/docs/${d.id}`))}>
                 {d.title || "Sin título"}
               </Item>

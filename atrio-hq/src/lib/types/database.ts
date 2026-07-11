@@ -343,7 +343,12 @@ export interface Database {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      search_docs: {
+        Args: { q: string };
+        Returns: { id: string; title: string; icon: string }[];
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };
