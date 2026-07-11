@@ -1,11 +1,19 @@
-// Atrio service worker — v5 (push + sonido + badge). Cambiá el número al tocar
-// este archivo para forzar la actualización en los dispositivos.
-const SW_VERSION = "v5";
+// Atrio service worker — v6 (push + sonido + badge + echo a la app).
+// Cambiá el número al tocar este archivo para forzar la actualización.
+const SW_VERSION = "v6";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", () => {
   // No-op: presencia del handler para que el navegador considere la app instalable.
+});
+
+// Responde la versión activa a la página (diagnóstico).
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "atrio-getver") {
+    const port = event.ports && event.ports[0];
+    if (port) port.postMessage({ type: "atrio-sw-version", version: SW_VERSION });
+  }
 });
 
 // --- Web Push ---
@@ -30,10 +38,24 @@ self.addEventListener("push", (event) => {
     data: { url: data.url || "/" },
   };
   event.waitUntil(
-    self.registration.showNotification(title, options).catch(() =>
-      // fallback mínimo si las opciones fallan en algún navegador
-      self.registration.showNotification(title, { body: options.body })
-    )
+    (async () => {
+      // Avisar a las pestañas abiertas que llegó un push. Así la app puede sonar
+      // y mostrar un cartel aunque Windows/el SO tape la notificación nativa.
+      try {
+        const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        for (const c of clients) {
+          c.postMessage({ type: "atrio-push", at: Date.now(), title, body: options.body, url: options.data.url });
+        }
+      } catch (_) {
+        /* noop */
+      }
+      try {
+        await self.registration.showNotification(title, options);
+      } catch (_) {
+        // fallback mínimo si las opciones fallan en algún navegador
+        await self.registration.showNotification(title, { body: options.body });
+      }
+    })()
   );
 });
 

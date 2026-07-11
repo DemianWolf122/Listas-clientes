@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink, Bell, BellOff } from "lucide-react";
-import { getPushState, enablePush, disablePush, showLocalTest, sendServerTest, type PushState } from "@/lib/push";
+import {
+  getPushState,
+  enablePush,
+  disablePush,
+  showLocalTest,
+  sendServerTest,
+  getDiagnostics,
+  onPushEcho,
+  type PushState,
+  type Diagnostics,
+} from "@/lib/push";
+import { playNotify } from "@/lib/sound";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -208,10 +219,26 @@ function ThemeCard({ t, active, onClick }: { t: ThemeDef; active: boolean; onCli
   );
 }
 
+function hostLabel(host: string | null) {
+  if (!host) return null;
+  if (host.includes("windows")) return "Windows (Edge)";
+  if (host.includes("apple")) return "Apple (Safari)";
+  if (host.includes("google") || host.includes("fcm")) return "Chrome";
+  if (host.includes("mozilla")) return "Firefox";
+  return host;
+}
+
 function NotifButton({ meId }: { meId?: string }) {
   const [state, setState] = useState<PushState | "loading" | "working">("loading");
+  const [diag, setDiag] = useState<Diagnostics | null>(null);
+  const [lastPush, setLastPush] = useState<number | null>(null);
   useEffect(() => {
     getPushState().then(setState);
+    getDiagnostics().then(setDiag);
+  }, []);
+  // "Echo" del service worker: prueba que el push llegó de verdad al dispositivo.
+  useEffect(() => {
+    return onPushEcho(() => setLastPush(Date.now()));
   }, []);
 
   if (state === "loading") return <div className="h-9" />;
@@ -232,12 +259,25 @@ function NotifButton({ meId }: { meId?: string }) {
     );
   }
   if (state === "on") {
+    const device = hostLabel(diag?.endpointHost ?? null);
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-lg bg-[#4FA373]/12 px-3 py-2 text-[13px] font-medium text-[#3d8560]">
             <Check size={16} /> Notificaciones activadas
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              playNotify();
+              toast("🔊 ¿Escuchaste el ding?", {
+                description: "Este sonido es de la app, no depende de Windows.",
+              });
+            }}
+          >
+            <Volume2 size={14} /> Probar sonido
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -247,7 +287,7 @@ function NotifButton({ meId }: { meId?: string }) {
               toast(local ? "Te mandé una notificación de prueba 🔔" : "Reabrí la app y probá de nuevo");
             }}
           >
-            <Bell size={14} /> Probar
+            <Bell size={14} /> Probar aviso
           </Button>
           <Button
             variant="ghost"
@@ -261,9 +301,23 @@ function NotifButton({ meId }: { meId?: string }) {
             <BellOff size={14} /> Desactivar
           </Button>
         </div>
-        <p className="text-2xs text-ink-tertiary">
-          ¿No llega? Cerrá y reabrí la app (baja la versión nueva), tocá <b>Desactivar</b> y volvé a{" "}
-          <b>Activar notificaciones</b>.
+
+        {/* Diagnóstico: deja ver en qué punto falla, sin adivinar */}
+        <div className="space-y-1 rounded-xl bg-surface/60 p-3 text-2xs text-ink-secondary">
+          <DiagRow ok label="Este dispositivo" value={device ?? "suscripto"} />
+          <DiagRow ok={!!diag?.swVersion} label="Service worker" value={diag?.swVersion ?? "actualizando…"} />
+          <DiagRow
+            ok={!!lastPush}
+            label="Último push recibido"
+            value={lastPush ? "recién ✓" : "todavía ninguno"}
+          />
+        </div>
+
+        <p className="text-2xs leading-relaxed text-ink-tertiary">
+          Con la app <b>abierta</b> vas a escuchar el ding y ver un cartel sí o sí (no depende del sistema). Si con la app{" "}
+          <b>cerrada</b> en la PC no te salta el aviso de Windows, revisá: <b>Configuración de Windows → Sistema →
+          Notificaciones</b> (activá tu navegador y desactivá el <b>Asistente de concentración</b>). En el navegador,
+          que el sitio esté en <b>Permitir</b>.
         </p>
       </div>
     );
@@ -281,6 +335,18 @@ function NotifButton({ meId }: { meId?: string }) {
     >
       <Bell size={16} /> Activar notificaciones
     </Button>
+  );
+}
+
+function DiagRow({ ok, label, value }: { ok: boolean; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={cn("inline-block h-1.5 w-1.5 shrink-0 rounded-full", ok ? "bg-[#4FA373]" : "bg-ink-tertiary/50")}
+      />
+      <span className="text-ink-tertiary">{label}:</span>
+      <span className="font-medium text-ink-secondary">{value}</span>
+    </div>
   );
 }
 
