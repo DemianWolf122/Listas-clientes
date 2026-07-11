@@ -106,7 +106,11 @@ export async function GET(req: Request) {
   if (!SUPABASE_URL || !ANON) {
     return new NextResponse("Supabase no configurado", { status: 500 });
   }
-  const assignee = new URL(req.url).searchParams.get("assignee");
+  const rawAssignee = new URL(req.url).searchParams.get("assignee");
+  // solo UUIDs válidos (evita inyectar filtros arbitrarios en la URL REST)
+  const assignee = rawAssignee && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawAssignee)
+    ? rawAssignee
+    : null;
 
   let events: EventRow[] = [];
   let tasks: TaskRow[] = [];

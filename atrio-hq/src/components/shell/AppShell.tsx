@@ -10,6 +10,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { TaskSidePeek } from "@/components/tasks/TaskSidePeek";
+import { ThemeArt } from "./ThemeArt";
 
 function Splash() {
   return (
@@ -56,8 +57,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
           <main className="relative min-h-0 flex-1 overflow-hidden">
-            {/* capa decorativa del tema activo (grids, hexágonos, luciérnagas…) */}
+            {/* capa decorativa del tema activo (gradientes + escena SVG) */}
             <div aria-hidden className="theme-backdrop" />
+            <ThemeArt />
             <div className="relative z-[1] h-full">{children}</div>
           </main>
         </div>
