@@ -41,3 +41,16 @@ export function playChime() {
   tone(660, 120, "sine", 0.05);
   setTimeout(() => tone(880, 160, "sine", 0.05), 90);
 }
+
+/** Reactiva el contexto de audio (iOS lo suspende hasta un gesto del usuario). */
+export function unlockAudio() {
+  const ac = audio();
+  if (ac && ac.state === "suspended") ac.resume().catch(() => {});
+}
+
+/** ding de notificación, más presente que el pop de mensaje */
+export function playNotify() {
+  unlockAudio();
+  tone(880, 120, "triangle", 0.09);
+  setTimeout(() => tone(1175, 170, "triangle", 0.09), 100);
+}

@@ -10,6 +10,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { TaskSidePeek } from "@/components/tasks/TaskSidePeek";
+import { NotificationSound } from "@/components/providers/NotificationSound";
 import { ThemeArt } from "./ThemeArt";
 
 function Splash() {
@@ -65,6 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <CommandPalette />
         <TaskSidePeek />
+        <NotificationSound />
       </div>
     </TooltipProvider>
   );
