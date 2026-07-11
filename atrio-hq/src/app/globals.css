@@ -218,6 +218,120 @@
   --accent-fg: 24 17 2;
 }
 
+/* ---------- Fondos temáticos ----------
+   Capa decorativa (.theme-backdrop) detrás del contenido: gradientes y SVG
+   inline con referencias a cada temática. Sin imágenes externas, casi gratis
+   en peso y sin tocar la legibilidad (el contenido va por encima). */
+
+.theme-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+/* — claros: manchas suaves del color de acento — */
+.theme-rosa .theme-backdrop {
+  background-image:
+    radial-gradient(480px 340px at 8% 0%, rgb(214 51 108 / 0.10), transparent 70%),
+    radial-gradient(560px 400px at 100% 100%, rgb(214 51 108 / 0.07), transparent 70%);
+}
+.theme-amarillo .theme-backdrop {
+  background-image:
+    radial-gradient(500px 340px at 92% 0%, rgb(217 119 6 / 0.11), transparent 70%),
+    radial-gradient(560px 400px at 0% 100%, rgb(217 119 6 / 0.07), transparent 70%);
+}
+.theme-lavanda .theme-backdrop {
+  background-image:
+    radial-gradient(480px 340px at 10% 0%, rgb(124 58 237 / 0.09), transparent 70%),
+    radial-gradient(560px 420px at 100% 96%, rgb(124 58 237 / 0.06), transparent 70%);
+}
+.theme-menta .theme-backdrop {
+  background-image:
+    radial-gradient(500px 360px at 90% 4%, rgb(13 148 100 / 0.10), transparent 70%),
+    radial-gradient(560px 420px at 4% 100%, rgb(13 148 100 / 0.06), transparent 70%);
+}
+.theme-oceano .theme-backdrop {
+  background-image:
+    radial-gradient(520px 360px at 6% 0%, rgb(2 119 189 / 0.10), transparent 70%),
+    radial-gradient(600px 440px at 100% 100%, rgb(2 119 189 / 0.07), transparent 70%);
+}
+.theme-atardecer .theme-backdrop {
+  background-image:
+    linear-gradient(180deg, rgb(234 88 12 / 0.06), transparent 30%),
+    radial-gradient(620px 400px at 50% 0%, rgb(244 140 60 / 0.12), transparent 72%),
+    radial-gradient(560px 400px at 100% 100%, rgb(234 88 12 / 0.06), transparent 70%);
+}
+
+/* — Cibernético: grilla neón + brillos cian/magenta (synthwave) — */
+.theme-cibernetico .theme-backdrop {
+  background-image:
+    radial-gradient(640px 420px at 12% 0%, rgb(0 229 255 / 0.16), transparent 70%),
+    radial-gradient(720px 520px at 100% 100%, rgb(199 36 255 / 0.13), transparent 70%),
+    linear-gradient(rgb(0 229 255 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 229 255 / 0.055) 1px, transparent 1px);
+  background-size: auto, auto, 44px 44px, 44px 44px;
+  background-repeat: no-repeat, no-repeat, repeat, repeat;
+}
+
+/* — Superhéroes: halftone de cómic + ráfaga de viñeta + rojo/azul — */
+.theme-superheroes .theme-backdrop {
+  background-image:
+    repeating-conic-gradient(from 195deg at 108% -8%, rgb(255 255 255 / 0.045) 0 5deg, transparent 5deg 13deg),
+    radial-gradient(560px 400px at 0% 4%, rgb(226 54 54 / 0.17), transparent 70%),
+    radial-gradient(660px 480px at 100% 62%, rgb(64 110 255 / 0.15), transparent 72%),
+    radial-gradient(rgb(255 255 255 / 0.05) 1.2px, transparent 1.3px);
+  background-size: auto, auto, auto, 17px 17px;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+}
+
+/* — Ben 10: dial + reloj de arena del Omnitrix en verde — */
+.theme-ben10 .theme-backdrop {
+  background-image:
+    radial-gradient(620px 460px at 88% 96%, rgb(57 210 61 / 0.15), transparent 70%),
+    radial-gradient(460px 340px at 0% 12%, rgb(57 210 61 / 0.08), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='%2339D23D' stroke-opacity='0.10' stroke-width='3.5'/%3E%3Cpath d='M10 16 H90 L57 50 L90 84 H10 L43 50 Z' fill='%2339D23D' fill-opacity='0.10'/%3E%3C/svg%3E");
+  background-position: center, center, calc(100% - 28px) calc(100% - 24px);
+  background-size: auto, auto, 300px 300px;
+}
+
+/* — League of Legends: patrón hextech + hexágono ornamental + oro/teal — */
+.theme-hextech .theme-backdrop {
+  background-image:
+    radial-gradient(620px 440px at 100% 0%, rgb(200 155 60 / 0.14), transparent 70%),
+    radial-gradient(560px 420px at 0% 100%, rgb(10 200 185 / 0.10), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='52' viewBox='0 0 46 52'%3E%3Cpath d='M23 5 L39 14 V32 L23 41 L7 32 V14 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.09' stroke-width='1.4'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 4 L90 27 V73 L50 96 L10 73 V27 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.13' stroke-width='2'/%3E%3Cpath d='M50 16 L80 33 V67 L50 84 L20 67 V33 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.08' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-size: auto, auto, 46px 52px, 300px 300px;
+  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+  background-position: center, center, 0 0, -70px calc(100% + 70px);
+}
+
+/* — Valorant: tajos diagonales «//» + brillo rojo — */
+.theme-valorant .theme-backdrop {
+  background-image:
+    radial-gradient(620px 440px at 100% 0%, rgb(255 70 85 / 0.15), transparent 70%),
+    radial-gradient(460px 360px at 0% 100%, rgb(255 70 85 / 0.07), transparent 70%),
+    linear-gradient(115deg, transparent 0 58%, rgb(255 70 85 / 0.12) 58% 59%, transparent 59% 62.5%, rgb(255 70 85 / 0.08) 62.5% 63.3%, transparent 63.3%),
+    linear-gradient(115deg, transparent 0 26%, rgb(236 242 246 / 0.05) 26% 26.7%, transparent 26.7%);
+}
+
+/* — El Príncipe Cruel: luciérnagas, enredadera, corona y viñeta de bosque — */
+.theme-elfhame .theme-backdrop {
+  background-image:
+    radial-gradient(3px 3px at 22% 30%, rgb(240 200 90 / 0.50), transparent 60%),
+    radial-gradient(2.5px 2.5px at 68% 18%, rgb(240 200 90 / 0.40), transparent 60%),
+    radial-gradient(2px 2px at 84% 64%, rgb(240 200 90 / 0.45), transparent 60%),
+    radial-gradient(2.5px 2.5px at 38% 78%, rgb(240 200 90 / 0.35), transparent 60%),
+    radial-gradient(2px 2px at 12% 58%, rgb(240 200 90 / 0.40), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 40'%3E%3Cpath d='M6 34 L10 12 L22 24 L32 6 L42 24 L54 12 L58 34 Z' fill='none' stroke='%23C9A227' stroke-opacity='0.20' stroke-width='2'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 420'%3E%3Cpath d='M42 0 C18 70 62 130 34 200 C10 268 58 330 38 420' fill='none' stroke='%23C9A227' stroke-opacity='0.14' stroke-width='2'/%3E%3Cellipse cx='30' cy='72' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.30' transform='rotate(-32 30 72)'/%3E%3Cellipse cx='50' cy='150' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.28' transform='rotate(24 50 150)'/%3E%3Cellipse cx='26' cy='236' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.30' transform='rotate(-28 26 236)'/%3E%3Cellipse cx='52' cy='320' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.26' transform='rotate(30 52 320)'/%3E%3C/svg%3E"),
+    radial-gradient(150% 110% at 50% 40%, transparent 55%, rgb(0 0 0 / 0.30) 100%),
+    radial-gradient(520px 400px at 90% 8%, rgb(201 162 39 / 0.10), transparent 70%);
+  background-position: center, center, center, center, center, calc(100% - 26px) 22px, -14px 100%, center, center;
+  background-size: auto, auto, auto, auto, auto, 88px 55px, 200px auto, auto, auto;
+}
+
 * {
   border-color: rgb(var(--border));
 }

@@ -148,17 +148,18 @@ function ThemeCard({ t, active, onClick }: { t: ThemeDef; active: boolean; onCli
         active ? "border-accent ring-2 ring-accent/25" : "border-hairline hover:border-hairline-strong hover:bg-surface-hover"
       )}
     >
-      {/* mini-preview: barra lateral + líneas + botón de acento */}
+      {/* mini-preview con los tokens y el fondo temático reales del tema */}
       <div
-        className="h-12 w-full rounded-lg border border-black/10 p-1.5"
-        style={{ background: t.swatch[0] }}
+        className={cn("relative h-12 w-full overflow-hidden rounded-lg border border-black/10", `theme-${t.id}`)}
+        style={{ background: "rgb(var(--canvas))" }}
       >
-        <div className="flex h-full gap-1">
-          <div className="w-1/3 rounded-[5px]" style={{ background: t.swatch[2] }} />
+        <div className="theme-backdrop" />
+        <div className="relative z-[1] flex h-full gap-1 p-1.5">
+          <div className="w-1/3 rounded-[5px]" style={{ background: "rgb(var(--surface-active))" }} />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="h-1.5 w-3/4 rounded-full" style={{ background: t.swatch[2] }} />
-            <div className="h-1.5 w-1/2 rounded-full opacity-70" style={{ background: t.swatch[2] }} />
-            <div className="mt-auto h-2 w-8 rounded-full" style={{ background: t.swatch[1] }} />
+            <div className="h-1.5 w-3/4 rounded-full" style={{ background: "rgb(var(--surface-active))" }} />
+            <div className="h-1.5 w-1/2 rounded-full opacity-70" style={{ background: "rgb(var(--surface-active))" }} />
+            <div className="mt-auto h-2 w-8 rounded-full" style={{ background: "rgb(var(--accent))" }} />
           </div>
         </div>
       </div>
