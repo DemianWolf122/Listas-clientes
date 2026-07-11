@@ -37,6 +37,7 @@ export const INVALIDATION_MAP: Record<string, string[][]> = {
   task_tags: [["task-tags"], ["tasks"], ["task"]],
   tags: [["tags"], ["task-tags"]],
   comments: [["comments"], ["activity"]],
+  docs: [["docs"], ["doc"], ["search"]],
   events: [["events"], ["home"]],
   notifications: [["notifications"]],
   activity: [["activity"], ["home"]],

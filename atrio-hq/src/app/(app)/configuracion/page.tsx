@@ -11,6 +11,7 @@ import { useIdentity } from "@/stores/identity";
 import { usePrefs } from "@/stores/ui";
 import { useAnnounceViewing } from "@/components/providers/PresenceProvider";
 import { CUSTOM_THEMES, type ThemeDef } from "@/lib/themes";
+import { ThemeArt } from "@/components/shell/ThemeArt";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -157,17 +158,24 @@ function ThemeCard({ t, active, onClick }: { t: ThemeDef; active: boolean; onCli
         active ? "border-accent ring-2 ring-accent/25" : "border-hairline hover:border-hairline-strong hover:bg-surface-hover"
       )}
     >
-      {/* mini-preview con los tokens y el fondo temático reales del tema */}
+      {/* mini-preview con los tokens, el fondo y la escena reales del tema */}
       <div
-        className={cn("relative h-12 w-full overflow-hidden rounded-lg border border-black/10", `theme-${t.id}`)}
+        className={cn("relative h-14 w-full overflow-hidden rounded-lg border border-black/10", `theme-${t.id}`)}
         style={{ background: "rgb(var(--canvas))" }}
       >
         <div className="theme-backdrop" />
+        <div
+          className="pointer-events-none absolute left-0 top-0"
+          style={{ width: "400%", height: "400%", transform: "scale(0.25)", transformOrigin: "top left" }}
+        >
+          <div className="relative h-full w-full">
+            <ThemeArt themeId={t.id} />
+          </div>
+        </div>
         <div className="relative z-[1] flex h-full gap-1 p-1.5">
-          <div className="w-1/3 rounded-[5px]" style={{ background: "rgb(var(--surface-active))" }} />
+          <div className="w-1/4 rounded-[5px] opacity-80" style={{ background: "rgb(var(--surface-active))" }} />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="h-1.5 w-3/4 rounded-full" style={{ background: "rgb(var(--surface-active))" }} />
-            <div className="h-1.5 w-1/2 rounded-full opacity-70" style={{ background: "rgb(var(--surface-active))" }} />
+            <div className="h-1.5 w-3/4 rounded-full opacity-80" style={{ background: "rgb(var(--surface-active))" }} />
             <div className="mt-auto h-2 w-8 rounded-full" style={{ background: "rgb(var(--accent))" }} />
           </div>
         </div>

@@ -19,12 +19,15 @@ export const CUSTOM_THEMES: ThemeDef[] = [
   { id: "menta", label: "Menta", emoji: "🍃", dark: false },
   { id: "oceano", label: "Océano", emoji: "🌊", dark: false },
   { id: "atardecer", label: "Atardecer", emoji: "🌅", dark: false },
+  { id: "cafe", label: "Café", emoji: "☕", dark: false },
   { id: "cibernetico", label: "Cibernético", emoji: "🤖", dark: true },
   { id: "superheroes", label: "Superhéroes", emoji: "🦸", dark: true },
   { id: "ben10", label: "Ben 10", emoji: "👽", dark: true },
   { id: "hextech", label: "League of Legends", emoji: "⚔️", dark: true },
   { id: "valorant", label: "Valorant", emoji: "🎯", dark: true },
   { id: "elfhame", label: "El Príncipe Cruel", emoji: "👑", dark: true },
+  { id: "galaxia", label: "Galaxia", emoji: "🌌", dark: true },
+  { id: "arcade", label: "Arcade", emoji: "👾", dark: true },
 ];
 
 /** Lista completa para next-themes. */

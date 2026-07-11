@@ -126,7 +126,52 @@
   --accent-fg: 255 255 255;
 }
 
+.theme-cafe {
+  --canvas: 251 247 241;
+  --surface: 244 236 226;
+  --surface-hover: 238 228 215;
+  --surface-active: 231 219 203;
+  --text: 46 33 22;
+  --text-secondary: 128 108 90;
+  --text-tertiary: 163 145 128;
+  --border: 238 228 214;
+  --border-strong: 225 211 193;
+  --accent: 139 90 43;
+  --accent-soft: 240 224 204;
+  --accent-fg: 255 255 255;
+}
+
 /* — oscuros — */
+
+.theme-galaxia {
+  --canvas: 12 10 30;
+  --surface: 19 16 42;
+  --surface-hover: 27 23 56;
+  --surface-active: 35 30 70;
+  --text: 232 230 248;
+  --text-secondary: 158 152 192;
+  --text-tertiary: 112 106 148;
+  --border: 32 28 62;
+  --border-strong: 48 42 86;
+  --accent: 167 139 250;
+  --accent-soft: 46 36 88;
+  --accent-fg: 20 12 44;
+}
+
+.theme-arcade {
+  --canvas: 10 10 20;
+  --surface: 17 17 32;
+  --surface-hover: 25 25 44;
+  --surface-active: 33 33 56;
+  --text: 235 240 255;
+  --text-secondary: 150 160 195;
+  --text-tertiary: 105 115 150;
+  --border: 32 32 56;
+  --border-strong: 48 48 80;
+  --accent: 255 46 136;
+  --accent-soft: 70 18 46;
+  --accent-fg: 255 255 255;
+}
 
 .theme-cibernetico {
   --canvas: 8 12 24;
@@ -263,15 +308,11 @@
     radial-gradient(560px 400px at 100% 100%, rgb(234 88 12 / 0.06), transparent 70%);
 }
 
-/* — Cibernético: grilla neón + brillos cian/magenta (synthwave) — */
+/* — Cibernético: brillos cian/magenta (la grilla en perspectiva la dibuja ThemeArt) — */
 .theme-cibernetico .theme-backdrop {
   background-image:
     radial-gradient(640px 420px at 12% 0%, rgb(0 229 255 / 0.16), transparent 70%),
-    radial-gradient(720px 520px at 100% 100%, rgb(199 36 255 / 0.13), transparent 70%),
-    linear-gradient(rgb(0 229 255 / 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(0 229 255 / 0.055) 1px, transparent 1px);
-  background-size: auto, auto, 44px 44px, 44px 44px;
-  background-repeat: no-repeat, no-repeat, repeat, repeat;
+    radial-gradient(720px 520px at 100% 100%, rgb(199 36 255 / 0.13), transparent 70%);
 }
 
 /* — Superhéroes: halftone de cómic + ráfaga de viñeta + rojo/azul — */
@@ -285,26 +326,21 @@
   background-repeat: no-repeat, no-repeat, no-repeat, repeat;
 }
 
-/* — Ben 10: dial + reloj de arena del Omnitrix en verde — */
+/* — Ben 10: brillos verdes (el Omnitrix y los circuitos los dibuja ThemeArt) — */
 .theme-ben10 .theme-backdrop {
   background-image:
     radial-gradient(620px 460px at 88% 96%, rgb(57 210 61 / 0.15), transparent 70%),
-    radial-gradient(460px 340px at 0% 12%, rgb(57 210 61 / 0.08), transparent 70%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='%2339D23D' stroke-opacity='0.10' stroke-width='3.5'/%3E%3Cpath d='M10 16 H90 L57 50 L90 84 H10 L43 50 Z' fill='%2339D23D' fill-opacity='0.10'/%3E%3C/svg%3E");
-  background-position: center, center, calc(100% - 28px) calc(100% - 24px);
-  background-size: auto, auto, 300px 300px;
+    radial-gradient(460px 340px at 0% 12%, rgb(57 210 61 / 0.08), transparent 70%);
 }
 
-/* — League of Legends: patrón hextech + hexágono ornamental + oro/teal — */
+/* — League of Legends: patrón hextech + oro/teal (cristal y runas en ThemeArt) — */
 .theme-hextech .theme-backdrop {
   background-image:
     radial-gradient(620px 440px at 100% 0%, rgb(200 155 60 / 0.14), transparent 70%),
     radial-gradient(560px 420px at 0% 100%, rgb(10 200 185 / 0.10), transparent 70%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='52' viewBox='0 0 46 52'%3E%3Cpath d='M23 5 L39 14 V32 L23 41 L7 32 V14 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.09' stroke-width='1.4'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 4 L90 27 V73 L50 96 L10 73 V27 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.13' stroke-width='2'/%3E%3Cpath d='M50 16 L80 33 V67 L50 84 L20 67 V33 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.08' stroke-width='1.5'/%3E%3C/svg%3E");
-  background-size: auto, auto, 46px 52px, 300px 300px;
-  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
-  background-position: center, center, 0 0, -70px calc(100% + 70px);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='52' viewBox='0 0 46 52'%3E%3Cpath d='M23 5 L39 14 V32 L23 41 L7 32 V14 Z' fill='none' stroke='%23C89B3C' stroke-opacity='0.09' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-size: auto, auto, 46px 52px;
+  background-repeat: no-repeat, no-repeat, repeat;
 }
 
 /* — Valorant: tajos diagonales «//» + brillo rojo — */
@@ -316,20 +352,34 @@
     linear-gradient(115deg, transparent 0 26%, rgb(236 242 246 / 0.05) 26% 26.7%, transparent 26.7%);
 }
 
-/* — El Príncipe Cruel: luciérnagas, enredadera, corona y viñeta de bosque — */
+/* — El Príncipe Cruel: viñeta de bosque + brillo dorado (la escena la dibuja ThemeArt) — */
 .theme-elfhame .theme-backdrop {
   background-image:
-    radial-gradient(3px 3px at 22% 30%, rgb(240 200 90 / 0.50), transparent 60%),
-    radial-gradient(2.5px 2.5px at 68% 18%, rgb(240 200 90 / 0.40), transparent 60%),
-    radial-gradient(2px 2px at 84% 64%, rgb(240 200 90 / 0.45), transparent 60%),
-    radial-gradient(2.5px 2.5px at 38% 78%, rgb(240 200 90 / 0.35), transparent 60%),
-    radial-gradient(2px 2px at 12% 58%, rgb(240 200 90 / 0.40), transparent 60%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 40'%3E%3Cpath d='M6 34 L10 12 L22 24 L32 6 L42 24 L54 12 L58 34 Z' fill='none' stroke='%23C9A227' stroke-opacity='0.20' stroke-width='2'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 420'%3E%3Cpath d='M42 0 C18 70 62 130 34 200 C10 268 58 330 38 420' fill='none' stroke='%23C9A227' stroke-opacity='0.14' stroke-width='2'/%3E%3Cellipse cx='30' cy='72' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.30' transform='rotate(-32 30 72)'/%3E%3Cellipse cx='50' cy='150' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.28' transform='rotate(24 50 150)'/%3E%3Cellipse cx='26' cy='236' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.30' transform='rotate(-28 26 236)'/%3E%3Cellipse cx='52' cy='320' rx='10' ry='4' fill='%234E7A54' fill-opacity='0.26' transform='rotate(30 52 320)'/%3E%3C/svg%3E"),
     radial-gradient(150% 110% at 50% 40%, transparent 55%, rgb(0 0 0 / 0.30) 100%),
     radial-gradient(520px 400px at 90% 8%, rgb(201 162 39 / 0.10), transparent 70%);
-  background-position: center, center, center, center, center, calc(100% - 26px) 22px, -14px 100%, center, center;
-  background-size: auto, auto, auto, auto, auto, 88px 55px, 200px auto, auto, auto;
+}
+
+/* — Café: manchas cálidas — */
+.theme-cafe .theme-backdrop {
+  background-image:
+    radial-gradient(520px 360px at 90% 6%, rgb(139 90 43 / 0.10), transparent 70%),
+    radial-gradient(560px 420px at 4% 100%, rgb(139 90 43 / 0.07), transparent 70%);
+}
+
+/* — Galaxia: nebulosas violeta/rosa + viñeta espacial — */
+.theme-galaxia .theme-backdrop {
+  background-image:
+    radial-gradient(640px 460px at 82% 10%, rgb(167 139 250 / 0.16), transparent 70%),
+    radial-gradient(560px 440px at 8% 86%, rgb(236 72 153 / 0.10), transparent 72%),
+    radial-gradient(140% 110% at 50% 40%, transparent 55%, rgb(0 0 0 / 0.30) 100%);
+}
+
+/* — Arcade: brillos rosa/cian + scanlines CRT — */
+.theme-arcade .theme-backdrop {
+  background-image:
+    radial-gradient(560px 400px at 12% 0%, rgb(255 46 136 / 0.14), transparent 70%),
+    radial-gradient(560px 420px at 100% 100%, rgb(45 226 230 / 0.10), transparent 70%),
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.14) 0 1px, transparent 1px 4px);
 }
 
 * {
