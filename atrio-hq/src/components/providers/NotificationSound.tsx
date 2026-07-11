@@ -1,19 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { SCHEMA } from "@/lib/constants";
 import { useIdentity } from "@/stores/identity";
 import { playNotify, unlockAudio } from "@/lib/sound";
+import { onPushEcho } from "@/lib/push";
 
 /**
- * Sonido de notificaciones con la app abierta: cuando llega una notificación
- * nueva para el perfil activo (postgres_changes INSERT), suena un ding. El push
- * del sistema cubre el caso con la app cerrada. Se reproduce "sí o sí" (no
- * depende del toggle de sonidos sutiles, que es para los mensajes).
+ * Aviso in-app con la app abierta: cuando llega un push (echo del service worker)
+ * o se inserta una notificación para el perfil activo (realtime), suena un ding
+ * y aparece un cartel. Es 100% nuestro, así que funciona aunque el SO (Windows,
+ * etc.) tape la notificación nativa o la muestre sin sonido.
  */
 export function NotificationSound() {
   const me = useIdentity((s) => s.profileId);
+  const lastFire = useRef(0);
+
+  // Suena + cartel, con anti-duplicado (el push y el realtime pueden llegar casi
+  // juntos para el mismo aviso).
+  function fire(title?: string, body?: string) {
+    const now = Date.now();
+    if (now - lastFire.current < 2500) return;
+    lastFire.current = now;
+    playNotify();
+    toast(title || "🔔 Atrio", { description: body || undefined, duration: 6000 });
+  }
 
   // Desbloquea el audio en el primer gesto (requisito de iOS/Safari).
   useEffect(() => {
@@ -26,6 +39,13 @@ export function NotificationSound() {
     };
   }, []);
 
+  // Echo del service worker: se dispara apenas llega el push al dispositivo.
+  useEffect(() => {
+    return onPushEcho((info) => fire(info.title, info.body));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Realtime: cubre el caso sin push (app abierta, aviso recién creado).
   useEffect(() => {
     if (!me) return;
     const supabase = supabaseBrowser();
@@ -34,12 +54,16 @@ export function NotificationSound() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: SCHEMA, table: "notifications", filter: `recipient_id=eq.${me}` },
-        () => playNotify()
+        (payload) => {
+          const n = payload.new as { title?: string; body?: string };
+          fire(n?.title, n?.body);
+        }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me]);
 
   return null;

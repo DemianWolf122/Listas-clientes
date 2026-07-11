@@ -96,6 +96,80 @@ export async function sendServerTest(profileId: string): Promise<boolean> {
   }
 }
 
+/** Escucha el "echo" que manda el service worker cuando llega un push. */
+export function onPushEcho(
+  cb: (info: { at: number; title?: string; body?: string; url?: string }) => void
+): () => void {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return () => {};
+  const handler = (e: MessageEvent) => {
+    if (e.data && e.data.type === "atrio-push") {
+      cb({ at: e.data.at, title: e.data.title, body: e.data.body, url: e.data.url });
+    }
+  };
+  navigator.serviceWorker.addEventListener("message", handler);
+  return () => navigator.serviceWorker.removeEventListener("message", handler);
+}
+
+export type Diagnostics = {
+  supported: boolean;
+  permission: NotificationPermission | "unsupported";
+  swRegistered: boolean;
+  swVersion: string | null;
+  subscribed: boolean;
+  endpointHost: string | null;
+};
+
+async function swVersion(reg?: ServiceWorkerRegistration | null): Promise<string | null> {
+  const target = reg?.active || navigator.serviceWorker.controller;
+  if (!target) return null;
+  return new Promise((resolve) => {
+    const ch = new MessageChannel();
+    const timer = setTimeout(() => resolve(null), 1200);
+    ch.port1.onmessage = (e) => {
+      clearTimeout(timer);
+      resolve(e.data?.version ?? null);
+    };
+    try {
+      target.postMessage({ type: "atrio-getver" }, [ch.port2]);
+    } catch {
+      clearTimeout(timer);
+      resolve(null);
+    }
+  });
+}
+
+/** Estado real de las notificaciones en este dispositivo (para diagnóstico). */
+export async function getDiagnostics(): Promise<Diagnostics> {
+  if (!pushSupported()) {
+    return {
+      supported: false,
+      permission: "unsupported",
+      swRegistered: false,
+      swVersion: null,
+      subscribed: false,
+      endpointHost: null,
+    };
+  }
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  let host: string | null = null;
+  if (sub) {
+    try {
+      host = new URL(sub.endpoint).host;
+    } catch {
+      /* noop */
+    }
+  }
+  return {
+    supported: true,
+    permission: Notification.permission,
+    swRegistered: !!reg,
+    swVersion: await swVersion(reg),
+    subscribed: !!sub,
+    endpointHost: host,
+  };
+}
+
 export async function disablePush(): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.getRegistration();
