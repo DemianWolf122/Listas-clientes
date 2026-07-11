@@ -1,6 +1,7 @@
 "use client";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { playNotify } from "@/lib/sound";
 
 // Clave pública VAPID (es pública por diseño; la privada vive solo en Supabase).
 export const VAPID_PUBLIC_KEY =
@@ -70,10 +71,13 @@ export async function showLocalTest(): Promise<boolean> {
     if (!pushSupported() || Notification.permission !== "granted") return false;
     const reg = await navigator.serviceWorker.ready;
     await reg.showNotification("🔔 Prueba de Atrio", {
-      body: "Si ves esto, las notificaciones andan en este dispositivo 🎉",
+      body: "Si ves esto (y lo escuchás), las notificaciones andan 🎉",
       icon: "/icon",
-      badge: "/icon",
-    });
+      badge: "/badge",
+      silent: false,
+      vibrate: [180, 90, 180],
+    } as NotificationOptions);
+    playNotify();
     return true;
   } catch {
     return false;

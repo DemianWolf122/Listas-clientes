@@ -1,6 +1,6 @@
-// Atrio service worker — v3 (push). Cambiá el número al tocar este archivo
-// para forzar la actualización en los dispositivos.
-const SW_VERSION = "v3";
+// Atrio service worker — v5 (push + sonido + badge). Cambiá el número al tocar
+// este archivo para forzar la actualización en los dispositivos.
+const SW_VERSION = "v5";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
@@ -19,9 +19,14 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Atrio";
   const options = {
     body: data.body || "",
-    icon: "/icon",
-    badge: "/icon",
+    icon: data.icon || "/icon",
+    badge: data.badge || "/badge",
     tag: data.tag || undefined,
+    // sonido/vibración: silent:false fuerza el sonido del sistema; renotify
+    // hace que cada aviso vuelva a sonar aunque comparta tag.
+    silent: false,
+    renotify: !!data.tag,
+    vibrate: [180, 90, 180],
     data: { url: data.url || "/" },
   };
   event.waitUntil(
