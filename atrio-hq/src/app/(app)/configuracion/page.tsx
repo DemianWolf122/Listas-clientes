@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette } from "lucide-react";
+import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { PWAInstallButton } from "@/components/settings/PWAInstallButton";
@@ -36,6 +36,15 @@ export default function SettingsPage() {
           hint="Tenela en la pantalla de inicio y abrila como una app, a pantalla completa."
         >
           <PWAInstallButton />
+        </Section>
+
+        {/* Sincronizar calendario */}
+        <Section
+          icon={<CalendarPlus size={16} />}
+          title="Sincronizar con tu calendario"
+          hint="Suscribí tu agenda de Atrio en Google Calendar, Apple Calendar o el calendario de tu teléfono. Es de solo lectura y se actualiza sola cada ~1 h."
+        >
+          <CalendarSync meId={me?.id} />
         </Section>
 
         {/* Apariencia */}
@@ -169,6 +178,63 @@ function ThemeCard({ t, active, onClick }: { t: ThemeDef; active: boolean; onCli
         {active && <Check size={13} className="shrink-0 text-accent" />}
       </div>
     </button>
+  );
+}
+
+function CalendarSync({ meId }: { meId?: string }) {
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+  useEffect(() => setOrigin(window.location.origin), []);
+  if (!origin) return null;
+
+  const feeds = [
+    meId ? { key: "mine", label: "Mi agenda (mis tareas + eventos)", url: `${origin}/api/ics?assignee=${meId}` } : null,
+    { key: "all", label: "Toda la agenda (Lucila + Demian)", url: `${origin}/api/ics` },
+  ].filter(Boolean) as { key: string; label: string; url: string }[];
+
+  function copy(url: string, key: string) {
+    navigator.clipboard?.writeText(url);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  return (
+    <div className="space-y-2.5">
+      {feeds.map((f) => (
+        <div key={f.key} className="rounded-xl border border-hairline p-2.5">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="text-[13px] font-medium text-ink">{f.label}</span>
+            <a
+              href={f.url.replace(/^https?:\/\//, "webcal://")}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-accent px-2 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90"
+            >
+              <ExternalLink size={12} /> Suscribir
+            </a>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <code className="min-w-0 flex-1 truncate rounded-md bg-surface px-2 py-1.5 text-2xs text-ink-secondary">{f.url}</code>
+            <button
+              onClick={() => copy(f.url, f.key)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-hairline px-2 py-1.5 text-2xs font-medium text-ink transition hover:bg-surface-hover"
+            >
+              {copied === f.key ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
+              {copied === f.key ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+        </div>
+      ))}
+      <div className="rounded-xl bg-surface/60 p-3 text-2xs leading-relaxed text-ink-secondary">
+        <p className="mb-1 font-semibold text-ink">Cómo suscribirte</p>
+        <p>
+          <span className="font-medium text-ink">iPhone / iPad:</span> tocá “Suscribir” y confirmá. (O: Ajustes →
+          Calendario → Cuentas → Añadir cuenta → Otra → Añadir calendario suscrito.)
+        </p>
+        <p className="mt-1">
+          <span className="font-medium text-ink">Google Calendar:</span> en la compu, “Otros calendarios” → “+” → Desde
+          una URL → pegá el link copiado.
+        </p>
+      </div>
+    </div>
   );
 }
 
