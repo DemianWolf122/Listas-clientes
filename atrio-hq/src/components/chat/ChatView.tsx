@@ -177,7 +177,7 @@ function Composer({
           recipient_id: other.id,
           actor_id: me,
           type: dm ? "message" : "mention",
-          title: dm ? `Mensaje de ${meProfile?.name}` : `${meProfile?.name} te mencionó`,
+          title: dm ? `💬 ${meProfile?.name}` : `💬 ${meProfile?.name} te mencionó`,
           body,
           target_type: "channel",
           target_id: channelId,
