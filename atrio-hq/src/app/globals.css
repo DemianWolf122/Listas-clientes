@@ -36,7 +36,8 @@
    Cada tema redefine los tokens; toda la app cambia de piel sin tocar
    componentes. Claros primero, oscuros después. */
 
-.theme-rosa {
+.theme-rosa,
+.theme-rosa-liso {
   --canvas: 255 247 250;
   --surface: 252 238 243;
   --surface-hover: 249 230 238;
@@ -51,7 +52,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-amarillo {
+.theme-amarillo,
+.theme-amarillo-liso {
   --canvas: 255 253 243;
   --surface: 251 246 228;
   --surface-hover: 247 240 214;
@@ -66,7 +68,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-lavanda {
+.theme-lavanda,
+.theme-lavanda-liso {
   --canvas: 251 249 255;
   --surface: 245 241 252;
   --surface-hover: 238 232 249;
@@ -81,7 +84,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-menta {
+.theme-menta,
+.theme-menta-liso {
   --canvas: 246 253 249;
   --surface: 235 248 241;
   --surface-hover: 225 244 234;
@@ -96,7 +100,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-oceano {
+.theme-oceano,
+.theme-oceano-liso {
   --canvas: 246 251 255;
   --surface: 234 244 252;
   --surface-hover: 224 239 250;
@@ -111,7 +116,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-atardecer {
+.theme-atardecer,
+.theme-atardecer-liso {
   --canvas: 255 250 245;
   --surface: 253 242 231;
   --surface-hover: 250 234 219;
@@ -126,7 +132,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-cafe {
+.theme-cafe,
+.theme-cafe-liso {
   --canvas: 251 247 241;
   --surface: 244 236 226;
   --surface-hover: 238 228 215;
@@ -143,7 +150,8 @@
 
 /* — oscuros — */
 
-.theme-galaxia {
+.theme-galaxia,
+.theme-galaxia-liso {
   --canvas: 12 10 30;
   --surface: 19 16 42;
   --surface-hover: 27 23 56;
@@ -158,7 +166,8 @@
   --accent-fg: 20 12 44;
 }
 
-.theme-arcade {
+.theme-arcade,
+.theme-arcade-liso {
   --canvas: 10 10 20;
   --surface: 17 17 32;
   --surface-hover: 25 25 44;
@@ -173,7 +182,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-cibernetico {
+.theme-cibernetico,
+.theme-cibernetico-liso {
   --canvas: 8 12 24;
   --surface: 14 20 36;
   --surface-hover: 21 30 52;
@@ -188,7 +198,8 @@
   --accent-fg: 4 16 26;
 }
 
-.theme-superheroes {
+.theme-superheroes,
+.theme-superheroes-liso {
   --canvas: 13 17 35;
   --surface: 20 26 48;
   --surface-hover: 28 36 64;
@@ -203,7 +214,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-ben10 {
+.theme-ben10,
+.theme-ben10-liso {
   --canvas: 8 10 8;
   --surface: 15 20 15;
   --surface-hover: 23 30 23;
@@ -218,7 +230,8 @@
   --accent-fg: 4 20 6;
 }
 
-.theme-hextech {
+.theme-hextech,
+.theme-hextech-liso {
   --canvas: 1 10 19;
   --surface: 8 20 32;
   --surface-hover: 14 30 47;
@@ -233,7 +246,8 @@
   --accent-fg: 22 15 2;
 }
 
-.theme-valorant {
+.theme-valorant,
+.theme-valorant-liso {
   --canvas: 15 25 35;
   --surface: 22 34 46;
   --surface-hover: 30 45 59;
@@ -248,7 +262,8 @@
   --accent-fg: 255 255 255;
 }
 
-.theme-elfhame {
+.theme-elfhame,
+.theme-elfhame-liso {
   --canvas: 10 15 12;
   --surface: 16 24 19;
   --surface-hover: 24 34 27;
@@ -276,32 +291,38 @@
 }
 
 /* — claros: manchas suaves del color de acento — */
-.theme-rosa .theme-backdrop {
+.theme-rosa .theme-backdrop,
+.theme-rosa-liso .theme-backdrop {
   background-image:
     radial-gradient(480px 340px at 8% 0%, rgb(214 51 108 / 0.10), transparent 70%),
     radial-gradient(560px 400px at 100% 100%, rgb(214 51 108 / 0.07), transparent 70%);
 }
-.theme-amarillo .theme-backdrop {
+.theme-amarillo .theme-backdrop,
+.theme-amarillo-liso .theme-backdrop {
   background-image:
     radial-gradient(500px 340px at 92% 0%, rgb(217 119 6 / 0.11), transparent 70%),
     radial-gradient(560px 400px at 0% 100%, rgb(217 119 6 / 0.07), transparent 70%);
 }
-.theme-lavanda .theme-backdrop {
+.theme-lavanda .theme-backdrop,
+.theme-lavanda-liso .theme-backdrop {
   background-image:
     radial-gradient(480px 340px at 10% 0%, rgb(124 58 237 / 0.09), transparent 70%),
     radial-gradient(560px 420px at 100% 96%, rgb(124 58 237 / 0.06), transparent 70%);
 }
-.theme-menta .theme-backdrop {
+.theme-menta .theme-backdrop,
+.theme-menta-liso .theme-backdrop {
   background-image:
     radial-gradient(500px 360px at 90% 4%, rgb(13 148 100 / 0.10), transparent 70%),
     radial-gradient(560px 420px at 4% 100%, rgb(13 148 100 / 0.06), transparent 70%);
 }
-.theme-oceano .theme-backdrop {
+.theme-oceano .theme-backdrop,
+.theme-oceano-liso .theme-backdrop {
   background-image:
     radial-gradient(520px 360px at 6% 0%, rgb(2 119 189 / 0.10), transparent 70%),
     radial-gradient(600px 440px at 100% 100%, rgb(2 119 189 / 0.07), transparent 70%);
 }
-.theme-atardecer .theme-backdrop {
+.theme-atardecer .theme-backdrop,
+.theme-atardecer-liso .theme-backdrop {
   background-image:
     linear-gradient(180deg, rgb(234 88 12 / 0.06), transparent 30%),
     radial-gradient(620px 400px at 50% 0%, rgb(244 140 60 / 0.12), transparent 72%),
@@ -309,7 +330,8 @@
 }
 
 /* — Cibernético: brillos cian/magenta (la grilla en perspectiva la dibuja ThemeArt) — */
-.theme-cibernetico .theme-backdrop {
+.theme-cibernetico .theme-backdrop,
+.theme-cibernetico-liso .theme-backdrop {
   background-image:
     radial-gradient(640px 420px at 12% 0%, rgb(0 229 255 / 0.16), transparent 70%),
     radial-gradient(720px 520px at 100% 100%, rgb(199 36 255 / 0.13), transparent 70%);
@@ -327,7 +349,8 @@
 }
 
 /* — Ben 10: brillos verdes (el Omnitrix y los circuitos los dibuja ThemeArt) — */
-.theme-ben10 .theme-backdrop {
+.theme-ben10 .theme-backdrop,
+.theme-ben10-liso .theme-backdrop {
   background-image:
     radial-gradient(620px 460px at 88% 96%, rgb(57 210 61 / 0.15), transparent 70%),
     radial-gradient(460px 340px at 0% 12%, rgb(57 210 61 / 0.08), transparent 70%);
@@ -353,21 +376,24 @@
 }
 
 /* — El Príncipe Cruel: viñeta de bosque + brillo dorado (la escena la dibuja ThemeArt) — */
-.theme-elfhame .theme-backdrop {
+.theme-elfhame .theme-backdrop,
+.theme-elfhame-liso .theme-backdrop {
   background-image:
     radial-gradient(150% 110% at 50% 40%, transparent 55%, rgb(0 0 0 / 0.30) 100%),
     radial-gradient(520px 400px at 90% 8%, rgb(201 162 39 / 0.10), transparent 70%);
 }
 
 /* — Café: manchas cálidas — */
-.theme-cafe .theme-backdrop {
+.theme-cafe .theme-backdrop,
+.theme-cafe-liso .theme-backdrop {
   background-image:
     radial-gradient(520px 360px at 90% 6%, rgb(139 90 43 / 0.10), transparent 70%),
     radial-gradient(560px 420px at 4% 100%, rgb(139 90 43 / 0.07), transparent 70%);
 }
 
 /* — Galaxia: nebulosas violeta/rosa + viñeta espacial — */
-.theme-galaxia .theme-backdrop {
+.theme-galaxia .theme-backdrop,
+.theme-galaxia-liso .theme-backdrop {
   background-image:
     radial-gradient(640px 460px at 82% 10%, rgb(167 139 250 / 0.16), transparent 70%),
     radial-gradient(560px 440px at 8% 86%, rgb(236 72 153 / 0.10), transparent 72%),
@@ -380,6 +406,28 @@
     radial-gradient(560px 400px at 12% 0%, rgb(255 46 136 / 0.14), transparent 70%),
     radial-gradient(560px 420px at 100% 100%, rgb(45 226 230 / 0.10), transparent 70%),
     repeating-linear-gradient(0deg, rgb(0 0 0 / 0.14) 0 1px, transparent 1px 4px);
+}
+
+/* — variantes lisas (solo brillos de color, sin patrones ni dibujos) — */
+.theme-superheroes-liso .theme-backdrop {
+  background-image:
+    radial-gradient(560px 400px at 0% 4%, rgb(226 54 54 / 0.17), transparent 70%),
+    radial-gradient(660px 480px at 100% 62%, rgb(64 110 255 / 0.15), transparent 72%);
+}
+.theme-hextech-liso .theme-backdrop {
+  background-image:
+    radial-gradient(620px 440px at 100% 0%, rgb(200 155 60 / 0.14), transparent 70%),
+    radial-gradient(560px 420px at 0% 100%, rgb(10 200 185 / 0.10), transparent 70%);
+}
+.theme-valorant-liso .theme-backdrop {
+  background-image:
+    radial-gradient(620px 440px at 100% 0%, rgb(255 70 85 / 0.15), transparent 70%),
+    radial-gradient(460px 360px at 0% 100%, rgb(255 70 85 / 0.07), transparent 70%);
+}
+.theme-arcade-liso .theme-backdrop {
+  background-image:
+    radial-gradient(560px 400px at 12% 0%, rgb(255 46 136 / 0.14), transparent 70%),
+    radial-gradient(560px 420px at 100% 100%, rgb(45 226 230 / 0.10), transparent 70%);
 }
 
 * {
