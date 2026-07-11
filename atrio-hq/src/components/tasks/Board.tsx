@@ -38,6 +38,17 @@ export function Board({ projectId }: { projectId: string }) {
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
 
+  async function addSection() {
+    if (!sectionName.trim()) return;
+    await createSection.mutateAsync({
+      projectId,
+      name: sectionName.trim(),
+      sort_order: (sections?.length ?? 0) + 1,
+    });
+    setSectionName("");
+    setAddingSection(false);
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -107,26 +118,38 @@ export function Board({ projectId }: { projectId: string }) {
 
         <div className="w-[280px] shrink-0">
           {addingSection ? (
-            <input
-              autoFocus
-              value={sectionName}
-              onChange={(e) => setSectionName(e.target.value)}
-              onBlur={() => setAddingSection(false)}
-              onKeyDown={async (e) => {
-                if (e.key === "Enter" && sectionName.trim()) {
-                  await createSection.mutateAsync({
-                    projectId,
-                    name: sectionName.trim(),
-                    sort_order: (sections?.length ?? 0) + 1,
-                  });
-                  setSectionName("");
-                  setAddingSection(false);
-                }
-                if (e.key === "Escape") setAddingSection(false);
-              }}
-              placeholder="Nombre de la sección"
-              className="w-full rounded-lg border border-hairline bg-canvas px-2.5 py-2 text-[13px] outline-none focus:border-accent"
-            />
+            <div className="rounded-lg border border-hairline bg-canvas p-2 shadow-card focus-within:border-accent">
+              <input
+                autoFocus
+                value={sectionName}
+                onChange={(e) => setSectionName(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter") await addSection();
+                  if (e.key === "Escape") {
+                    setSectionName("");
+                    setAddingSection(false);
+                  }
+                }}
+                placeholder="Nombre de la sección"
+                className="w-full bg-transparent px-0.5 py-1 text-[13px] outline-none placeholder:text-ink-tertiary"
+              />
+              <div className="mt-1.5 flex items-center justify-end gap-1.5">
+                <button
+                  onClick={() => { setSectionName(""); setAddingSection(false); }}
+                  className="rounded-md px-2 py-1 text-2xs font-medium text-ink-secondary transition hover:bg-surface-hover"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={addSection}
+                  disabled={!sectionName.trim()}
+                  className="rounded-md bg-accent px-2.5 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90 disabled:opacity-40"
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
           ) : (
             <button
               onClick={() => setAddingSection(true)}
@@ -232,24 +255,41 @@ function AddTaskInline({
     );
 
   return (
-    <textarea
-      autoFocus
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      onBlur={() => {
-        submit();
-        setOpen(false);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          submit();
-        }
-        if (e.key === "Escape") setOpen(false);
-      }}
-      rows={2}
-      placeholder="Título de la tarea…"
-      className="w-full resize-none rounded-lg border border-hairline bg-canvas p-2.5 text-[13px] shadow-card outline-none focus:border-accent"
-    />
+    <div className="rounded-lg border border-hairline bg-canvas p-2 shadow-card focus-within:border-accent">
+      <textarea
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submit();
+          }
+          if (e.key === "Escape") {
+            setTitle("");
+            setOpen(false);
+          }
+        }}
+        rows={2}
+        placeholder="Título de la tarea…"
+        className="w-full resize-none bg-transparent p-0.5 text-[13px] outline-none placeholder:text-ink-tertiary"
+      />
+      <div className="mt-1.5 flex items-center justify-end gap-1.5">
+        <button
+          onClick={() => { setTitle(""); setOpen(false); }}
+          className="rounded-md px-2 py-1 text-2xs font-medium text-ink-secondary transition hover:bg-surface-hover"
+        >
+          Cancelar
+        </button>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={submit}
+          disabled={!title.trim()}
+          className="rounded-md bg-accent px-2.5 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90 disabled:opacity-40"
+        >
+          Agregar
+        </button>
+      </div>
+    </div>
   );
 }

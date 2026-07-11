@@ -93,21 +93,37 @@ export function MessageItem({
         )}
 
         {editing ? (
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={saveEdit}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                saveEdit();
-              }
-              if (e.key === "Escape") setEditing(false);
-            }}
-            rows={2}
-            className="mt-0.5 w-full resize-none rounded-lg border border-hairline bg-canvas px-2 py-1.5 text-[14px] outline-none focus:border-accent"
-          />
+          <div className="mt-0.5">
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  saveEdit();
+                }
+                if (e.key === "Escape") setEditing(false);
+              }}
+              rows={2}
+              className="w-full resize-none rounded-lg border border-hairline bg-canvas px-2 py-1.5 text-[14px] outline-none focus:border-accent"
+            />
+            <div className="mt-1 flex items-center gap-1.5">
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={saveEdit}
+                className="rounded-md bg-accent px-2.5 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="rounded-md px-2 py-1 text-2xs font-medium text-ink-secondary transition hover:bg-surface-hover"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         ) : (
           <div className={cn("whitespace-pre-wrap break-words text-[14px] leading-relaxed text-ink", pending && "opacity-50")}>
             {formatText(message.body ?? "", names)}

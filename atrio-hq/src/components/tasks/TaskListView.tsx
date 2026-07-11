@@ -125,6 +125,15 @@ function AddRow({
         placeholder="Agregar tarea"
         className="flex-1 bg-transparent py-1 text-[14px] outline-none placeholder:text-ink-tertiary"
       />
+      {title.trim() && (
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={submit}
+          className="shrink-0 rounded-md bg-accent px-2.5 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90"
+        >
+          Agregar
+        </button>
+      )}
     </div>
   );
 }

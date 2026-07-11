@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, FolderOpen } from "lucide-react";
+import { Check, FolderOpen, ArrowLeft } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Button } from "@/components/ui/Button";
 import { AutoTextarea } from "@/components/ui/AutoTextarea";
@@ -79,7 +79,10 @@ export function QuickAddTask({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-hairline px-5 py-4">
+      <div className="flex items-center gap-2 border-b border-hairline px-4 py-4 sm:px-5">
+        <button onClick={onDone} className="icon-btn -ml-1 shrink-0" aria-label="Volver" title="Volver">
+          <ArrowLeft size={18} />
+        </button>
         <h2 className="text-sm font-semibold text-ink">Nueva tarea</h2>
       </div>
       <div className="flex-1 overflow-y-auto p-5">

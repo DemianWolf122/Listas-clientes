@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MoreHorizontal, Trash2, ExternalLink, Plus, CornerDownRight } from "lucide-react";
+import { MoreHorizontal, Trash2, ExternalLink, Plus, CornerDownRight, ArrowLeft } from "lucide-react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { Avatar } from "@/components/ui/Avatar";
 import { Spinner } from "@/components/ui/Spinner";
@@ -124,6 +124,9 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
     <div className="flex h-full flex-col">
       {/* header */}
       <div className="flex items-center gap-2 border-b border-hairline px-4 py-2.5">
+        <button onClick={onClose} className="icon-btn -ml-1 shrink-0" aria-label="Volver" title="Volver">
+          <ArrowLeft size={18} />
+        </button>
         {task.project && (
           <button
             onClick={() => {
@@ -273,6 +276,15 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
               placeholder="Agregar subtarea"
               className="flex-1 bg-transparent py-1 text-[13px] outline-none placeholder:text-ink-tertiary"
             />
+            {newSub.trim() && (
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={addSubtask}
+                className="shrink-0 rounded-md bg-accent px-2.5 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90"
+              >
+                Agregar
+              </button>
+            )}
           </div>
         </div>
 
