@@ -1,5 +1,7 @@
-// Service worker: habilita instalabilidad (PWA) sin cachear de más
-// (evita servir versiones viejas de la app) + notificaciones Web Push.
+// Atrio service worker — v3 (push). Cambiá el número al tocar este archivo
+// para forzar la actualización en los dispositivos.
+const SW_VERSION = "v3";
+
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", () => {
@@ -11,16 +13,22 @@ self.addEventListener("push", (event) => {
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
-  } catch {
+  } catch (_) {
     data = { title: "Atrio", body: event.data ? event.data.text() : "" };
   }
+  const title = data.title || "Atrio";
+  const options = {
+    body: data.body || "",
+    icon: "/icon",
+    badge: "/icon",
+    tag: data.tag || undefined,
+    data: { url: data.url || "/" },
+  };
   event.waitUntil(
-    self.registration.showNotification(data.title || "Atrio", {
-      body: data.body || "",
-      icon: "/icon",
-      badge: "/icon",
-      data: { url: data.url || "/" },
-    })
+    self.registration.showNotification(title, options).catch(() =>
+      // fallback mínimo si las opciones fallan en algún navegador
+      self.registration.showNotification(title, { body: options.body })
+    )
   );
 });
 

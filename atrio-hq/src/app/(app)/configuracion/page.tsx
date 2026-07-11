@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink, Bell, BellOff } from "lucide-react";
-import { getPushState, enablePush, disablePush, type PushState } from "@/lib/push";
+import { getPushState, enablePush, disablePush, showLocalTest, sendServerTest, type PushState } from "@/lib/push";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { PWAInstallButton } from "@/components/settings/PWAInstallButton";
@@ -232,21 +233,38 @@ function NotifButton({ meId }: { meId?: string }) {
   }
   if (state === "on") {
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-2 rounded-lg bg-[#4FA373]/12 px-3 py-2 text-[13px] font-medium text-[#3d8560]">
-          <Check size={16} /> Notificaciones activadas
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={async () => {
-            setState("working");
-            await disablePush();
-            setState("off");
-          }}
-        >
-          <BellOff size={14} /> Desactivar
-        </Button>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-lg bg-[#4FA373]/12 px-3 py-2 text-[13px] font-medium text-[#3d8560]">
+            <Check size={16} /> Notificaciones activadas
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const local = await showLocalTest();
+              if (meId) await sendServerTest(meId);
+              toast(local ? "Te mandé una notificación de prueba 🔔" : "Reabrí la app y probá de nuevo");
+            }}
+          >
+            <Bell size={14} /> Probar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              setState("working");
+              await disablePush();
+              setState("off");
+            }}
+          >
+            <BellOff size={14} /> Desactivar
+          </Button>
+        </div>
+        <p className="text-2xs text-ink-tertiary">
+          ¿No llega? Cerrá y reabrí la app (baja la versión nueva), tocá <b>Desactivar</b> y volvé a{" "}
+          <b>Activar notificaciones</b>.
+        </p>
       </div>
     );
   }

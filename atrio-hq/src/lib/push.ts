@@ -44,7 +44,8 @@ export async function enablePush(profileId: string): Promise<PushState> {
   const perm = await Notification.requestPermission();
   if (perm !== "granted") return perm === "denied" ? "denied" : "off";
 
-  const reg = await navigator.serviceWorker.register("/sw.js");
+  const reg = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+  await reg.update().catch(() => {});
   await navigator.serviceWorker.ready;
 
   let sub = await reg.pushManager.getSubscription();
@@ -61,6 +62,34 @@ export async function enablePush(profileId: string): Promise<PushState> {
       { onConflict: "endpoint" }
     );
   return "on";
+}
+
+/** Muestra una notificación local (sin servidor): prueba SW + permiso + display. */
+export async function showLocalTest(): Promise<boolean> {
+  try {
+    if (!pushSupported() || Notification.permission !== "granted") return false;
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification("🔔 Prueba de Atrio", {
+      body: "Si ves esto, las notificaciones andan en este dispositivo 🎉",
+      icon: "/icon",
+      badge: "/icon",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Dispara un push real desde el servidor a tus dispositivos (prueba end-to-end). */
+export async function sendServerTest(profileId: string): Promise<boolean> {
+  try {
+    const { error } = await supabaseBrowser().functions.invoke("push-dispatch", {
+      body: { ping: profileId },
+    });
+    return !error;
+  } catch {
+    return false;
+  }
 }
 
 export async function disablePush(): Promise<void> {
