@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   StatusCheckbox,
+  StatusControl,
   AssigneeControl,
   DeadlineControl,
   ScheduleControl,
@@ -16,6 +17,9 @@ import {
   TagControl,
   TagChips,
 } from "./controls";
+import { AutoTextarea } from "@/components/ui/AutoTextarea";
+import { Button } from "@/components/ui/Button";
+import type { TaskStatus } from "@/lib/constants";
 import {
   useTask,
   useSubtasks,
@@ -84,6 +88,13 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
     const willBeDone = !done;
     toggle.mutate({ task: task!, done: willBeDone });
     if (willBeDone) {
+      if (celebrate) fireConfetti();
+      if (sounds) playChime();
+    }
+  }
+  function changeStatus(status: TaskStatus) {
+    update.mutate({ id, status, completed_at: status === "done" ? new Date().toISOString() : null });
+    if (status === "done") {
       if (celebrate) fireConfetti();
       if (sounds) playChime();
     }
@@ -188,6 +199,9 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
               onChange={(v) => update.mutate({ id, assignee_id: v, notifyAssignee: true })}
             />
           </Prop>
+          <Prop label="Estado">
+            <StatusControl showLabel value={task.status} onChange={changeStatus} />
+          </Prop>
           <Prop label="Entrega">
             <DeadlineControl
               date={task.due_date}
@@ -216,13 +230,12 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
 
         {/* descripción */}
         <div className="mt-4 px-5">
-          <textarea
+          <AutoTextarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
             onBlur={commitDesc}
             placeholder="Agregá una descripción…"
-            rows={3}
-            className="w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-[14px] leading-relaxed text-ink outline-none transition placeholder:text-ink-tertiary focus:border-hairline focus:bg-surface/40 focus:px-2"
+            className="min-h-[80px] w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-[14px] leading-relaxed text-ink outline-none transition placeholder:text-ink-tertiary focus:border-hairline focus:bg-surface/40 focus:px-2"
           />
         </div>
 
@@ -295,12 +308,26 @@ export function TaskDetail({ id, onClose }: { id: string; onClose: () => void })
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submitComment();
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submitComment();
+                  }
                 }}
-                placeholder="Escribí un comentario… (⌘↵ para enviar)"
+                placeholder="Escribí un comentario…"
                 rows={2}
                 className="w-full resize-none rounded-lg border border-hairline bg-canvas px-2.5 py-2 text-[13px] outline-none focus:border-accent"
               />
+              <div className="mt-1.5 flex items-center justify-between">
+                <span className="text-2xs text-ink-tertiary">Enter para enviar · Shift+Enter salto de línea</span>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={submitComment}
+                  disabled={!comment.trim() || addComment.isPending}
+                >
+                  Comentar
+                </Button>
+              </div>
             </div>
           </div>
         </div>

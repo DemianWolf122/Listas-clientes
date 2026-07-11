@@ -18,7 +18,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover
 import { Avatar } from "@/components/ui/Avatar";
 import { useProfiles } from "@/hooks/profiles";
 import { useTags, useCreateTag, useToggleTaskTag } from "@/hooks/tags";
-import { PRIORITY, PRIORITY_ORDER, type Priority } from "@/lib/constants";
+import { useUpdateTask, type TaskWithTags } from "@/hooks/tasks";
+import { usePrefs } from "@/stores/ui";
+import { fireConfetti } from "@/lib/confetti";
+import { playChime } from "@/lib/sound";
+import { PRIORITY, PRIORITY_ORDER, TASK_STATUS, STATUS_ORDER, type Priority, type TaskStatus } from "@/lib/constants";
 import { cn, humanDate, isOverdue, readableText, hm } from "@/lib/utils";
 
 const timeInputCls =
@@ -77,6 +81,94 @@ export function StatusCheckbox({
   );
 }
 
+/* ---------------- Estado (Por hacer / En progreso / Listo) ---------------- */
+export function StatusGlyph({ status, size = 16 }: { status: string; size?: number }) {
+  const meta = TASK_STATUS[status as TaskStatus] ?? TASK_STATUS.todo;
+  if (status === "done") {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full text-white"
+        style={{ width: size, height: size, background: meta.color }}
+      >
+        <Check size={size * 0.6} strokeWidth={3} />
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn("inline-flex", status !== "in_progress" && "text-ink-tertiary")}
+      style={status === "in_progress" ? { color: meta.color } : undefined}
+    >
+      <svg width={size} height={size} viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        {status === "in_progress" && <path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor" />}
+      </svg>
+    </span>
+  );
+}
+
+/** Selector de estado controlado (para el detalle y el alta rápida). */
+export function StatusControl({
+  value,
+  onChange,
+  size = 18,
+  showLabel = false,
+}: {
+  value: string;
+  onChange: (s: TaskStatus) => void;
+  size?: number;
+  showLabel?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const meta = TASK_STATUS[value as TaskStatus] ?? TASK_STATUS.todo;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          title={`Estado: ${meta.label}`}
+          aria-label={`Estado: ${meta.label}`}
+          className={cn(
+            "flex shrink-0 items-center gap-1.5 rounded-md transition-colors",
+            showLabel && "px-1.5 py-1 text-[13px] hover:bg-surface-hover"
+          )}
+        >
+          <StatusGlyph status={value} size={size} />
+          {showLabel && <span className="text-ink">{meta.label}</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[180px]">
+        {STATUS_ORDER.map((s) => (
+          <Row key={s} active={value === s} onClick={() => { onChange(s); setOpen(false); }}>
+            <StatusGlyph status={s} size={15} />
+            <span className="flex-1">{TASK_STATUS[s].label}</span>
+            {value === s && <Check size={14} className="text-ink-secondary" />}
+          </Row>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Estado autogestionado a partir de una tarea (mutación + confetti al completar). */
+export function TaskStatusButton({ task, size = 16 }: { task: TaskWithTags; size?: number }) {
+  const update = useUpdateTask();
+  const { sounds, celebrate } = usePrefs();
+  function set(status: TaskStatus) {
+    if (status === task.status) return;
+    update.mutate({
+      id: task.id,
+      status,
+      completed_at: status === "done" ? new Date().toISOString() : null,
+    });
+    if (status === "done") {
+      if (celebrate) fireConfetti();
+      if (sounds) playChime();
+    }
+  }
+  return <StatusControl value={task.status} onChange={set} size={size} />;
+}
+
 /* ---------------- Priority ---------------- */
 export function PriorityDot({ value }: { value: string }) {
   const p = PRIORITY[value as Priority] ?? PRIORITY.none;
@@ -118,9 +210,14 @@ export function PriorityControl({
 export function AssigneeControl({
   value,
   onChange,
+  compact = false,
+  size = 20,
 }: {
   value: string | null;
   onChange: (v: string | null) => void;
+  /** compact = solo el avatar (para tarjetas/filas apretadas). */
+  compact?: boolean;
+  size?: number;
 }) {
   const [open, setOpen] = useState(false);
   const { data: profiles } = useProfiles();
@@ -128,16 +225,23 @@ export function AssigneeControl({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] text-ink transition-colors hover:bg-surface-hover">
+        <button
+          onClick={(e) => e.stopPropagation()}
+          title={assignee ? assignee.name : "Asignar responsable"}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md text-[13px] text-ink transition-colors hover:bg-surface-hover",
+            compact ? "p-0.5" : "px-1.5 py-1"
+          )}
+        >
           {assignee ? (
             <>
-              <Avatar profile={assignee} size={20} />
-              <span>{assignee.name}</span>
+              <Avatar profile={assignee} size={size} />
+              {!compact && <span>{assignee.name}</span>}
             </>
           ) : (
             <>
-              <UserCircle2 size={18} className="text-ink-tertiary" />
-              <span className="text-ink-secondary">Sin asignar</span>
+              <UserCircle2 size={compact ? size : 18} className="text-ink-tertiary" />
+              {!compact && <span className="text-ink-secondary">Sin asignar</span>}
             </>
           )}
         </button>
@@ -467,6 +571,63 @@ export function TagControl({ taskId, current }: { taskId: string; current: Tag[]
                 key={t.id}
                 onClick={() => toggle.mutate({ taskId, tagId: t.id, on: !currentIds.has(t.id) })}
               >
+                <span className="h-3 w-3 rounded" style={{ background: t.color }} />
+                <span className="flex-1">{t.name}</span>
+                {currentIds.has(t.id) && <Check size={14} className="text-ink-secondary" />}
+              </Row>
+            ))}
+          {draft.trim() && !tags?.some((t) => t.name.toLowerCase() === draft.trim().toLowerCase()) && (
+            <Row onClick={createAndAdd}>
+              <Plus size={14} className="text-ink-tertiary" />
+              <span>Crear “{draft.trim()}”</span>
+            </Row>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Igual que TagControl pero controlado (para el alta rápida, sin tarea todavía). */
+export function TagPicker({ value, onChange }: { value: Tag[]; onChange: (tags: Tag[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const { data: tags } = useTags();
+  const createTag = useCreateTag();
+  const currentIds = new Set(value.map((t) => t.id));
+
+  function toggle(tag: Tag) {
+    onChange(currentIds.has(tag.id) ? value.filter((t) => t.id !== tag.id) : [...value, tag]);
+  }
+  async function createAndAdd() {
+    const name = draft.trim();
+    if (!name) return;
+    const tag = await createTag.mutateAsync(name);
+    onChange([...value, tag]);
+    setDraft("");
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] text-ink-secondary transition-colors hover:bg-surface-hover">
+          <TagIcon size={14} className="text-ink-tertiary" />
+          Etiquetas
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[220px] p-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && createAndAdd()}
+          placeholder="Buscar o crear…"
+          className="mb-1.5 w-full rounded-md border border-hairline bg-canvas px-2 py-1.5 text-[13px] outline-none focus:border-accent"
+        />
+        <div className="max-h-[200px] space-y-px overflow-y-auto">
+          {(tags ?? [])
+            .filter((t) => t.name.toLowerCase().includes(draft.toLowerCase()))
+            .map((t) => (
+              <Row key={t.id} onClick={() => toggle(t)}>
                 <span className="h-3 w-3 rounded" style={{ background: t.color }} />
                 <span className="flex-1">{t.name}</span>
                 {currentIds.has(t.id) && <Check size={14} className="text-ink-secondary" />}

@@ -8,15 +8,14 @@ import { useUpdateTask, useToggleTask, type TaskWithTags } from "@/hooks/tasks";
 import { useProfileMap } from "@/hooks/profiles";
 import { useUI, usePrefs } from "@/stores/ui";
 import { Segmented } from "@/components/ui/Segmented";
-import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { StatusCheckbox, PriorityDot, ScheduleControl, DueChip } from "@/components/tasks/controls";
+import { StatusCheckbox, PriorityDot, ScheduleControl, DueChip, AssigneeControl } from "@/components/tasks/controls";
 import { EventDialog } from "@/components/calendar/EventDialog";
 import { WeekBoard, useAgendaCards, durationLabel, ymd, SIN_HORARIO } from "./shared";
 import { fireConfetti } from "@/lib/confetti";
 import { playChime } from "@/lib/sound";
 import { hm, timeOfDay, cn } from "@/lib/utils";
-import type { CalEvent, Profile } from "@/lib/types/database";
+import type { CalEvent } from "@/lib/types/database";
 
 export function AgendaView() {
   const profileMap = useProfileMap();
@@ -190,12 +189,7 @@ export function AgendaView() {
                     </div>
                     <div className="space-y-1">
                       {sinHorario.map((c) => (
-                        <UnscheduledRow
-                          key={c.key}
-                          task={c.task!}
-                          dateStr={ymd(date)}
-                          assignee={c.assigneeId ? profileMap[c.assigneeId] : undefined}
-                        />
+                        <UnscheduledRow key={c.key} task={c.task!} dateStr={ymd(date)} />
                       ))}
                     </div>
                   </div>
@@ -221,10 +215,19 @@ function TaskRow({ task, color }: { task: TaskWithTags; color: string }) {
   const timeStart = task.start_time ? hm(task.start_time) : "";
   const timeEnd = task.start_time && task.end_time ? hm(task.end_time) : null;
   const isEntrega = !task.start_time && !!task.due_time;
+  const update = useUpdateTask();
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => openPeek({ kind: "task", id: task.id })}
-      className="group flex w-full items-stretch gap-1 overflow-hidden rounded-xl border border-hairline bg-canvas text-left shadow-card transition-shadow hover:shadow-subtle"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openPeek({ kind: "task", id: task.id });
+        }
+      }}
+      className="group flex w-full cursor-pointer items-stretch gap-1 overflow-hidden rounded-xl border border-hairline bg-canvas text-left shadow-card transition-shadow hover:shadow-subtle"
     >
       <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right tnum">
         <div className="text-[13px] font-semibold text-ink">{timeStart || (task.due_time ? hm(task.due_time) : "")}</div>
@@ -232,7 +235,7 @@ function TaskRow({ task, color }: { task: TaskWithTags; color: string }) {
         {isEntrega && <div className="text-2xs text-ink-tertiary">entrega</div>}
       </div>
       <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: color }} />
-      <div className="min-w-0 flex-1 py-2.5 pl-1.5 pr-3">
+      <div className="min-w-0 flex-1 py-2.5 pl-1.5">
         <div className="flex items-center gap-2">
           <StatusCheckbox
             checked={done}
@@ -252,7 +255,15 @@ function TaskRow({ task, color }: { task: TaskWithTags; color: string }) {
           {task.project && <span className="truncate">{task.project.emoji} {task.project.name}</span>}
         </div>
       </div>
-    </button>
+      <div className="flex items-center pr-2">
+        <AssigneeControl
+          compact
+          size={20}
+          value={task.assignee_id}
+          onChange={(v) => update.mutate({ id: task.id, assignee_id: v, notifyAssignee: true })}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -283,7 +294,7 @@ function EventRow({ event, color, onOpen }: { event: CalEvent; color: string; on
   );
 }
 
-function UnscheduledRow({ task, dateStr, assignee }: { task: TaskWithTags; dateStr: string; assignee?: Profile }) {
+function UnscheduledRow({ task, dateStr }: { task: TaskWithTags; dateStr: string }) {
   const openPeek = useUI((s) => s.openPeek);
   const toggle = useToggleTask();
   const update = useUpdateTask();
@@ -306,7 +317,12 @@ function UnscheduledRow({ task, dateStr, assignee }: { task: TaskWithTags; dateS
         <PriorityDot value={task.priority} />
         <span className="ml-1.5">{task.title}</span>
       </button>
-      {assignee && <Avatar profile={assignee} size={18} />}
+      <AssigneeControl
+        compact
+        size={18}
+        value={task.assignee_id}
+        onChange={(v) => update.mutate({ id: task.id, assignee_id: v, notifyAssignee: true })}
+      />
       <DueChip value={task.due_date} status={task.status} time={task.due_time} />
       <ScheduleControl
         date={task.start_date ?? dateStr}
