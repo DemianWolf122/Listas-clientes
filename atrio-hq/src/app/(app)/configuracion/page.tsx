@@ -196,8 +196,8 @@ function CalendarSync({ meId }: { meId?: string }) {
   if (!origin) return null;
 
   const feeds = [
-    meId ? { key: "mine", label: "Mi agenda (mis tareas + eventos)", url: `${origin}/api/ics?assignee=${meId}` } : null,
-    { key: "all", label: "Toda la agenda (Lucila + Demian)", url: `${origin}/api/ics` },
+    meId ? { key: "mine", label: "Mi agenda (mis tareas + eventos)", url: `${origin}/api/ics/${meId}.ics` } : null,
+    { key: "all", label: "Toda la agenda (Lucila + Demian)", url: `${origin}/api/ics/atrio.ics` },
   ].filter(Boolean) as { key: string; label: string; url: string }[];
 
   function copy(url: string, key: string) {
@@ -209,8 +209,10 @@ function CalendarSync({ meId }: { meId?: string }) {
   return (
     <div className="space-y-2.5">
       {feeds.map((f) => {
-        const webcal = f.url.replace(/^https?:\/\//, "webcal://");
-        const google = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`;
+        // webcals:// = suscripción segura por HTTPS directo. Con webcal:// a secas,
+        // iOS baja a http:// y el redirect de Vercel rompe la validación de Apple.
+        const webcal = f.url.replace(/^https?:\/\//, "webcals://");
+        const google = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(f.url)}`;
         return (
           <div key={f.key} className="rounded-xl border border-hairline p-2.5">
             <div className="mb-1.5 text-[13px] font-medium text-ink">{f.label}</div>
@@ -251,7 +253,9 @@ function CalendarSync({ meId }: { meId?: string }) {
           pegá el link. Después aparece en el teléfono.
         </p>
         <p className="mt-1">
-          <span className="font-medium text-ink">iPhone / iPad:</span> tocá “Apple” y confirmá.
+          <span className="font-medium text-ink">iPhone / iPad:</span> tocá “Apple” y confirmá. Si no funciona, tocá
+          “Copiar” y andá a Ajustes → Apps → Calendario → Cuentas → Agregar cuenta → Otra → Agregar calendario suscrito
+          → pegá el link.
         </p>
       </div>
     </div>
