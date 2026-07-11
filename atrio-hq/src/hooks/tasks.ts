@@ -137,8 +137,8 @@ export function useCreateTask() {
           recipient_id: data.assignee_id,
           actor_id: me,
           type: "assigned",
-          title: "Nueva tarea asignada",
-          body: data.title,
+          title: `📌 ${data.title}`,
+          body: "Nueva tarea asignada para vos",
           target_type: "task",
           target_id: data.id,
         });
@@ -170,8 +170,8 @@ export function useUpdateTask() {
           recipient_id: patch.assignee_id,
           actor_id: me,
           type: "assigned",
-          title: "Te asignaron una tarea",
-          body: data.title,
+          title: `📌 ${data.title}`,
+          body: "Te asignaron esta tarea",
           target_type: "task",
           target_id: id,
         });
