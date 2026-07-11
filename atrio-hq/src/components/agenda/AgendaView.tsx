@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { format, parseISO, startOfWeek, addDays as fnsAddDays, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, List, LayoutGrid, Plus, CalendarClock } from "lucide-react";
-import { useAllTasks, useMyTasks, useUpdateTask, useToggleTask, type TaskWithTags } from "@/hooks/tasks";
+import { useAllTasks, useUpdateTask, useToggleTask, type TaskWithTags } from "@/hooks/tasks";
 import { useEvents } from "@/hooks/events";
 import { useProfileMap } from "@/hooks/profiles";
-import { useIdentity } from "@/stores/identity";
 import { useUI, usePrefs } from "@/stores/ui";
 import { Segmented } from "@/components/ui/Segmented";
 import { Avatar } from "@/components/ui/Avatar";
@@ -20,6 +19,8 @@ import { hm, timeOfDay, cn } from "@/lib/utils";
 import type { CalEvent, Profile } from "@/lib/types/database";
 
 const ymd = (d: Date) => format(d, "yyyy-MM-dd");
+/** sort >= este valor = "sin horario" (va al final del día / sección aparte). */
+const SIN_HORARIO = 2000;
 const minutesOf = (t?: string | null) => {
   if (!t) return 0;
   const [h, m] = hm(t).split(":").map(Number);
@@ -58,15 +59,16 @@ type Card = {
 };
 
 export function AgendaView() {
-  const me = useIdentity((s) => s.profileId);
   const { data: tasks } = useAllTasks();
-  const { data: myTasks } = useMyTasks(me);
   const { data: events } = useEvents();
   const profileMap = useProfileMap();
   const openPeek = useUI((s) => s.openPeek);
 
   const [view, setView] = useState<"week" | "day">("week");
   const [date, setDate] = useState<Date>(() => new Date());
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<CalEvent | null>(null);
+  const [defaultDate, setDefaultDate] = useState<string | undefined>();
 
   // En teléfonos, la vista de día es más legible que la grilla semanal.
   useEffect(() => {
@@ -74,9 +76,6 @@ export function AgendaView() {
       setView("day");
     }
   }, []);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<CalEvent | null>(null);
-  const [defaultDate, setDefaultDate] = useState<string | undefined>();
 
   function newEvent(forDate?: string) {
     setEditing(null);
@@ -88,6 +87,10 @@ export function AgendaView() {
     setDefaultDate(undefined);
     setDialogOpen(true);
   }
+  function goToDay(day: Date) {
+    setDate(day);
+    setView("day");
+  }
 
   // tarjetas por día (fecha → cards ordenadas)
   const cardsByDay = useMemo(() => {
@@ -96,8 +99,9 @@ export function AgendaView() {
       (map[day] ||= []).push(c);
     };
     (tasks ?? []).forEach((t) => {
-      if (t.start_date && t.start_time) {
-        push(t.start_date, {
+      const scheduled = Boolean(t.start_date && t.start_time);
+      if (scheduled) {
+        push(t.start_date!, {
           key: `ts-${t.id}`,
           kind: "task",
           color: t.project?.color ?? "#2383E2",
@@ -110,7 +114,9 @@ export function AgendaView() {
           assigneeId: t.assignee_id,
           done: t.status === "done",
         });
-      } else if (t.due_date) {
+      }
+      // La entrega también aparece en su día (salvo que coincida con el bloque agendado).
+      if (t.due_date && !(scheduled && t.start_date === t.due_date)) {
         push(t.due_date, {
           key: `td-${t.id}`,
           kind: "task",
@@ -119,7 +125,7 @@ export function AgendaView() {
           title: t.title,
           subtitle: t.project?.name ?? "Sin proyecto",
           timeLabel: t.due_time ? `entrega ${hm(t.due_time)}` : "vence",
-          sort: t.due_time ? minutesOf(t.due_time) : 2000,
+          sort: t.due_time ? minutesOf(t.due_time) : SIN_HORARIO,
           task: t,
           assigneeId: t.assignee_id,
           done: t.status === "done",
@@ -146,18 +152,12 @@ export function AgendaView() {
 
   const weekStart = startOfWeek(date, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => fnsAddDays(weekStart, i));
-  const rangeLabel = `${format(weekStart, "d")}–${format(fnsAddDays(weekStart, 6), "d 'de' MMM", { locale: es })}`;
+  const rangeLabel = `${format(weekStart, "d")}–${format(fnsAddDays(weekStart, 6), "d 'de' MMMM", { locale: es })}`;
 
-  // "para hoy" (para la vista Día)
-  const paraHoy = useMemo(
-    () =>
-      (myTasks ?? []).filter(
-        (t) =>
-          t.status !== "done" && t.due_date === ymd(date) && !(t.start_date === ymd(date) && t.start_time)
-      ),
-    [myTasks, date]
-  );
+  // vista Día: con horario arriba (ordenado), sin horario en su propia sección
   const dayCards = cardsByDay[ymd(date)] ?? [];
+  const timed = dayCards.filter((c) => c.sort < SIN_HORARIO);
+  const sinHorario = dayCards.filter((c) => c.sort >= SIN_HORARIO && c.task && c.task.status !== "done");
 
   return (
     <div className="flex h-full flex-col bg-surface/40">
@@ -185,7 +185,7 @@ export function AgendaView() {
             Hoy
           </button>
         </div>
-        <div className="min-w-0 text-[15px] font-semibold capitalize text-ink first-letter:uppercase">
+        <div className="min-w-0 text-[15px] font-semibold text-ink first-letter:uppercase">
           {view === "week" ? rangeLabel : format(date, "EEEE d 'de' MMMM", { locale: es })}
         </div>
         <div className="flex-1" />
@@ -205,6 +205,36 @@ export function AgendaView() {
         />
       </div>
 
+      {/* tira de días (vista Día): saltar rápido entre días de la semana */}
+      {view === "day" && (
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-hairline bg-canvas px-4 py-2 no-scrollbar sm:px-6">
+          {weekDays.map((day) => {
+            const selected = isSameDay(day, date);
+            const today = isSameDay(day, new Date());
+            return (
+              <button
+                key={ymd(day)}
+                onClick={() => setDate(day)}
+                className={cn(
+                  "flex min-w-[54px] shrink-0 flex-col items-center rounded-xl border px-2.5 py-1 transition-colors",
+                  selected
+                    ? "border-transparent bg-ink text-canvas"
+                    : "border-hairline bg-canvas hover:bg-surface-hover",
+                  !selected && today && "border-accent/60"
+                )}
+              >
+                <span className={cn("text-2xs font-semibold uppercase tracking-wide", selected ? "text-canvas/70" : "text-ink-tertiary")}>
+                  {format(day, "EEE", { locale: es })}
+                </span>
+                <span className={cn("text-[14px] font-semibold tnum", selected ? "text-canvas" : "text-ink")}>
+                  {format(day, "d")}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {view === "week" ? (
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="flex min-w-[860px] gap-2.5 p-3 sm:px-4">
@@ -215,11 +245,15 @@ export function AgendaView() {
               const cards = cardsByDay[dayStr] ?? [];
               return (
                 <div key={dayStr} className="flex min-w-[118px] flex-1 flex-col">
-                  {/* header del día */}
-                  <div
+                  {/* header del día → toca para abrir ese día en vista Día */}
+                  <button
+                    onClick={() => goToDay(day)}
+                    title="Ver este día"
                     className={cn(
-                      "mb-2 rounded-xl border px-3 py-2 text-center transition-colors",
-                      today ? "border-transparent bg-ink text-canvas" : "border-hairline bg-canvas",
+                      "mb-1 w-full rounded-xl border px-3 py-2 text-center transition-colors",
+                      today
+                        ? "border-transparent bg-ink text-canvas"
+                        : "border-hairline bg-canvas hover:bg-surface-hover",
                       weekend && !today && "opacity-70"
                     )}
                   >
@@ -229,9 +263,9 @@ export function AgendaView() {
                     <div className={cn("text-[15px] font-semibold tnum", today ? "text-canvas" : "text-ink")}>
                       {format(day, "d/MM")}
                     </div>
-                  </div>
+                  </button>
                   {/* cards del día */}
-                  <div className="group/col min-h-[60px] flex-1 space-y-2 rounded-xl">
+                  <div className={cn("group min-h-[60px] flex-1 space-y-2 rounded-xl p-1", today && "bg-accent-soft/40")}>
                     {cards.map((c) => (
                       <AgendaCard key={c.key} card={c} profileMap={profileMap} onOpenTask={(id) => openPeek({ kind: "task", id })} onOpenEvent={openEvent} />
                     ))}
@@ -239,7 +273,7 @@ export function AgendaView() {
                       onClick={() => newEvent(dayStr)}
                       className={cn(
                         "flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-hairline py-1.5 text-2xs text-ink-tertiary transition-colors hover:border-accent/40 hover:text-accent",
-                        cards.length > 0 && "opacity-0 group-hover/col:opacity-100"
+                        cards.length > 0 && "touch-reveal"
                       )}
                     >
                       <Plus size={13} /> Evento
@@ -253,7 +287,7 @@ export function AgendaView() {
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto bg-canvas">
           <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6">
-            {dayCards.length === 0 && paraHoy.length === 0 ? (
+            {timed.length === 0 && sinHorario.length === 0 ? (
               <EmptyState
                 emoji="🗓️"
                 title={isSameDay(date, new Date()) ? "Tu día está libre" : "Nada agendado este día"}
@@ -268,22 +302,27 @@ export function AgendaView() {
             ) : (
               <>
                 <div className="space-y-1.5">
-                  {dayCards.map((c) =>
+                  {timed.map((c) =>
                     c.kind === "task" && c.task ? (
-                      <TaskRow key={c.key} task={c.task} start={c.timeLabel.includes("–") || /^\d/.test(c.timeLabel) ? c.timeLabel : ""} color={c.color} />
+                      <TaskRow key={c.key} task={c.task} color={c.color} />
                     ) : c.event ? (
-                      <EventRow key={c.key} event={c.event} timeLabel={c.timeLabel} color={c.color} onOpen={() => openEvent(c.event!)} />
+                      <EventRow key={c.key} event={c.event} color={c.color} onOpen={() => openEvent(c.event!)} />
                     ) : null
                   )}
                 </div>
-                {paraHoy.length > 0 && (
+                {sinHorario.length > 0 && (
                   <div className="mt-6">
                     <div className="mb-2 flex items-center gap-1.5 px-1 text-2xs font-semibold uppercase tracking-wide text-ink-tertiary">
-                      <CalendarClock size={13} /> Para hoy · sin horario
+                      <CalendarClock size={13} /> Para este día · sin horario
                     </div>
                     <div className="space-y-1">
-                      {paraHoy.map((t) => (
-                        <UnscheduledRow key={t.id} task={t} dateStr={ymd(date)} />
+                      {sinHorario.map((c) => (
+                        <UnscheduledRow
+                          key={c.key}
+                          task={c.task!}
+                          dateStr={ymd(date)}
+                          assignee={c.assigneeId ? profileMap[c.assigneeId] : undefined}
+                        />
                       ))}
                     </div>
                   </div>
@@ -319,7 +358,11 @@ function AgendaCard({
         "w-full rounded-xl border p-2.5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-subtle",
         card.done && "opacity-60"
       )}
-      style={{ background: tint(card.color, 0.13), borderColor: tint(card.color, 0.28) }}
+      style={{
+        background: tint(card.color, 0.13),
+        borderColor: tint(card.color, 0.28),
+        borderLeft: `3px solid ${card.color}`,
+      }}
     >
       <div className="flex items-center justify-between">
         <span
@@ -343,14 +386,15 @@ function AgendaCard({
 }
 
 /* ---------------- filas de la vista Día ---------------- */
-function TaskRow({ task, start, color }: { task: TaskWithTags; start: string; color: string }) {
+function TaskRow({ task, color }: { task: TaskWithTags; color: string }) {
   const openPeek = useUI((s) => s.openPeek);
   const toggle = useToggleTask();
   const { sounds, celebrate } = usePrefs();
   const done = task.status === "done";
   const dur = durationLabel(task.start_time, task.end_time);
   const timeStart = task.start_time ? hm(task.start_time) : "";
-  const timeEnd = task.end_time ? hm(task.end_time) : null;
+  const timeEnd = task.start_time && task.end_time ? hm(task.end_time) : null;
+  const isEntrega = !task.start_time && !!task.due_time;
   return (
     <button
       onClick={() => openPeek({ kind: "task", id: task.id })}
@@ -359,6 +403,7 @@ function TaskRow({ task, start, color }: { task: TaskWithTags; start: string; co
       <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right tnum">
         <div className="text-[13px] font-semibold text-ink">{timeStart || (task.due_time ? hm(task.due_time) : "")}</div>
         {timeEnd && <div className="text-2xs text-ink-tertiary">{timeEnd}</div>}
+        {isEntrega && <div className="text-2xs text-ink-tertiary">entrega</div>}
       </div>
       <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: color }} />
       <div className="min-w-0 flex-1 py-2.5 pl-1.5 pr-3">
@@ -385,20 +430,26 @@ function TaskRow({ task, start, color }: { task: TaskWithTags; start: string; co
   );
 }
 
-function EventRow({ event, timeLabel, color, onOpen }: { event: CalEvent; timeLabel: string; color: string; onOpen: () => void }) {
+function EventRow({ event, color, onOpen }: { event: CalEvent; color: string; onOpen: () => void }) {
+  const start = event.all_day ? null : timeOfDay(event.starts_at);
+  const end = !event.all_day && event.ends_at ? timeOfDay(event.ends_at) : null;
   return (
     <button
       onClick={onOpen}
       className="group flex w-full items-stretch gap-1 overflow-hidden rounded-xl border border-hairline bg-canvas text-left shadow-card transition-shadow hover:shadow-subtle"
     >
-      <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right text-2xs font-medium tnum text-ink-tertiary">
-        {timeLabel.split("–")[0] || "·"}
+      <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right tnum">
+        <div className="text-[13px] font-semibold text-ink">{start ?? "—"}</div>
+        {end && <div className="text-2xs text-ink-tertiary">{end}</div>}
       </div>
       <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: color }} />
       <div className="min-w-0 flex-1 py-2.5 pl-1.5 pr-3">
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
           <span className="truncate text-[14px] font-medium text-ink">{event.title}</span>
+          {event.all_day && (
+            <span className="shrink-0 rounded-full bg-surface px-1.5 py-0.5 text-2xs text-ink-secondary">todo el día</span>
+          )}
         </div>
         {event.description && <div className="mt-0.5 truncate pl-[18px] text-2xs text-ink-tertiary">{event.description}</div>}
       </div>
@@ -406,7 +457,7 @@ function EventRow({ event, timeLabel, color, onOpen }: { event: CalEvent; timeLa
   );
 }
 
-function UnscheduledRow({ task, dateStr }: { task: TaskWithTags; dateStr: string }) {
+function UnscheduledRow({ task, dateStr, assignee }: { task: TaskWithTags; dateStr: string; assignee?: Profile }) {
   const openPeek = useUI((s) => s.openPeek);
   const toggle = useToggleTask();
   const update = useUpdateTask();
@@ -429,6 +480,7 @@ function UnscheduledRow({ task, dateStr }: { task: TaskWithTags; dateStr: string
         <PriorityDot value={task.priority} />
         <span className="ml-1.5">{task.title}</span>
       </button>
+      {assignee && <Avatar profile={assignee} size={18} />}
       <DueChip value={task.due_date} status={task.status} time={task.due_time} />
       <ScheduleControl
         date={task.start_date ?? dateStr}
