@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { RealtimeProvider } from "@/components/providers/RealtimeProvider";
 import { PresenceProvider } from "@/components/providers/PresenceProvider";
 import { initPWA } from "@/lib/pwa";
+import { THEME_IDS, THEME_CLASS_MAP } from "@/lib/themes";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -31,7 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem themes={THEME_IDS} value={THEME_CLASS_MAP}>
         <RealtimeProvider>
           <PresenceProvider>
             {children}

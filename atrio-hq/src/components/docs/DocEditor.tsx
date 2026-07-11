@@ -12,6 +12,7 @@ import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { Spinner } from "@/components/ui/Spinner";
 import { useDoc, useUpdateDoc, useDeleteDoc } from "@/hooks/docs";
+import { isDarkTheme } from "@/lib/themes";
 import { useAnnounceViewing } from "@/components/providers/PresenceProvider";
 import { relativeTime } from "@/lib/utils";
 import type { Doc, Json } from "@/lib/types/database";
@@ -34,7 +35,7 @@ function Editor({ doc }: { doc: Doc }) {
   const router = useRouter();
   const update = useUpdateDoc();
   const del = useDeleteDoc();
-  const { resolvedTheme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const [title, setTitle] = useState(doc.title);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -104,7 +105,7 @@ function Editor({ doc }: { doc: Doc }) {
         <div className="mt-4 sm:-ml-[54px]">
           <BlockNoteView
             editor={editor}
-            theme={resolvedTheme === "dark" ? "dark" : "light"}
+            theme={isDarkTheme(theme, resolvedTheme) ? "dark" : "light"}
             onChange={scheduleSave}
           />
         </div>

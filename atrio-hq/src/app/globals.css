@@ -32,6 +32,192 @@
   --accent-fg: 255 255 255;
 }
 
+/* ---------- Temas personalizados (Configuración → Apariencia) ----------
+   Cada tema redefine los tokens; toda la app cambia de piel sin tocar
+   componentes. Claros primero, oscuros después. */
+
+.theme-rosa {
+  --canvas: 255 247 250;
+  --surface: 252 238 243;
+  --surface-hover: 249 230 238;
+  --surface-active: 245 221 231;
+  --text: 45 25 33;
+  --text-secondary: 146 111 124;
+  --text-tertiary: 178 148 159;
+  --border: 247 226 234;
+  --border-strong: 238 206 219;
+  --accent: 214 51 108;
+  --accent-soft: 250 216 229;
+  --accent-fg: 255 255 255;
+}
+
+.theme-amarillo {
+  --canvas: 255 253 243;
+  --surface: 251 246 228;
+  --surface-hover: 247 240 214;
+  --surface-active: 243 233 199;
+  --text: 43 36 18;
+  --text-secondary: 138 124 88;
+  --text-tertiary: 170 157 122;
+  --border: 243 234 207;
+  --border-strong: 232 219 183;
+  --accent: 217 119 6;
+  --accent-soft: 250 234 192;
+  --accent-fg: 255 255 255;
+}
+
+.theme-lavanda {
+  --canvas: 251 249 255;
+  --surface: 245 241 252;
+  --surface-hover: 238 232 249;
+  --surface-active: 231 223 246;
+  --text: 36 28 54;
+  --text-secondary: 124 112 152;
+  --text-tertiary: 156 146 180;
+  --border: 237 231 248;
+  --border-strong: 223 214 240;
+  --accent: 124 58 237;
+  --accent-soft: 233 224 251;
+  --accent-fg: 255 255 255;
+}
+
+.theme-menta {
+  --canvas: 246 253 249;
+  --surface: 235 248 241;
+  --surface-hover: 225 244 234;
+  --surface-active: 214 239 227;
+  --text: 22 44 34;
+  --text-secondary: 104 138 122;
+  --text-tertiary: 138 168 152;
+  --border: 224 242 233;
+  --border-strong: 205 231 218;
+  --accent: 13 148 100;
+  --accent-soft: 206 240 224;
+  --accent-fg: 255 255 255;
+}
+
+.theme-oceano {
+  --canvas: 246 251 255;
+  --surface: 234 244 252;
+  --surface-hover: 224 239 250;
+  --surface-active: 213 233 247;
+  --text: 20 38 52;
+  --text-secondary: 104 132 152;
+  --text-tertiary: 138 162 180;
+  --border: 223 238 248;
+  --border-strong: 203 226 241;
+  --accent: 2 119 189;
+  --accent-soft: 211 234 249;
+  --accent-fg: 255 255 255;
+}
+
+.theme-atardecer {
+  --canvas: 255 250 245;
+  --surface: 253 242 231;
+  --surface-hover: 250 234 219;
+  --surface-active: 247 226 207;
+  --text: 51 32 20;
+  --text-secondary: 152 120 98;
+  --text-tertiary: 184 155 132;
+  --border: 248 233 219;
+  --border-strong: 240 219 199;
+  --accent: 234 88 12;
+  --accent-soft: 252 226 205;
+  --accent-fg: 255 255 255;
+}
+
+/* — oscuros — */
+
+.theme-cibernetico {
+  --canvas: 8 12 24;
+  --surface: 14 20 36;
+  --surface-hover: 21 30 52;
+  --surface-active: 29 40 68;
+  --text: 214 236 255;
+  --text-secondary: 138 164 196;
+  --text-tertiary: 96 122 152;
+  --border: 26 38 62;
+  --border-strong: 40 56 88;
+  --accent: 0 229 255;
+  --accent-soft: 8 52 66;
+  --accent-fg: 4 16 26;
+}
+
+.theme-superheroes {
+  --canvas: 13 17 35;
+  --surface: 20 26 48;
+  --surface-hover: 28 36 64;
+  --surface-active: 37 47 82;
+  --text: 235 238 248;
+  --text-secondary: 156 165 194;
+  --text-tertiary: 110 120 152;
+  --border: 33 42 72;
+  --border-strong: 49 60 98;
+  --accent: 226 54 54;
+  --accent-soft: 66 22 34;
+  --accent-fg: 255 255 255;
+}
+
+.theme-ben10 {
+  --canvas: 8 10 8;
+  --surface: 15 20 15;
+  --surface-hover: 23 30 23;
+  --surface-active: 32 42 32;
+  --text: 226 240 226;
+  --text-secondary: 148 170 148;
+  --text-tertiary: 102 124 102;
+  --border: 30 42 30;
+  --border-strong: 47 62 47;
+  --accent: 57 210 61;
+  --accent-soft: 12 56 18;
+  --accent-fg: 4 20 6;
+}
+
+.theme-hextech {
+  --canvas: 1 10 19;
+  --surface: 8 20 32;
+  --surface-hover: 14 30 47;
+  --surface-active: 21 41 62;
+  --text: 240 230 208;
+  --text-secondary: 168 156 132;
+  --text-tertiary: 120 111 90;
+  --border: 22 38 56;
+  --border-strong: 36 56 80;
+  --accent: 200 155 60;
+  --accent-soft: 56 42 14;
+  --accent-fg: 22 15 2;
+}
+
+.theme-valorant {
+  --canvas: 15 25 35;
+  --surface: 22 34 46;
+  --surface-hover: 30 45 59;
+  --surface-active: 39 56 72;
+  --text: 236 242 246;
+  --text-secondary: 158 174 186;
+  --text-tertiary: 112 128 140;
+  --border: 34 48 62;
+  --border-strong: 51 67 83;
+  --accent: 255 70 85;
+  --accent-soft: 72 26 34;
+  --accent-fg: 255 255 255;
+}
+
+.theme-elfhame {
+  --canvas: 10 15 12;
+  --surface: 16 24 19;
+  --surface-hover: 24 34 27;
+  --surface-active: 33 45 37;
+  --text: 232 236 226;
+  --text-secondary: 152 166 148;
+  --text-tertiary: 106 122 104;
+  --border: 28 40 32;
+  --border-strong: 44 59 47;
+  --accent: 201 162 39;
+  --accent-soft: 54 44 14;
+  --accent-fg: 24 17 2;
+}
+
 * {
   border-color: rgb(var(--border));
 }
@@ -158,104 +344,6 @@ body {
 }
 .cmdk-item[data-selected="true"] {
   background: rgb(var(--surface-hover));
-}
-
-/* ---------- FullCalendar → tokens de Atrio ---------- */
-.atrio-calendar .fc {
-  --fc-border-color: rgb(var(--border));
-  --fc-today-bg-color: rgb(var(--accent-soft) / 0.4);
-  --fc-neutral-bg-color: rgb(var(--surface));
-  --fc-page-bg-color: transparent;
-  --fc-button-bg-color: rgb(var(--surface));
-  --fc-button-border-color: rgb(var(--border));
-  --fc-button-text-color: rgb(var(--text));
-  --fc-button-hover-bg-color: rgb(var(--surface-hover));
-  --fc-button-hover-border-color: rgb(var(--border-strong));
-  --fc-button-active-bg-color: rgb(var(--accent));
-  --fc-button-active-border-color: rgb(var(--accent));
-  font-family: var(--font-inter), sans-serif;
-  font-size: 13px;
-}
-.atrio-calendar .fc .fc-toolbar-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  text-transform: capitalize;
-}
-.atrio-calendar .fc .fc-button {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 8px;
-  box-shadow: none;
-  text-transform: capitalize;
-}
-.atrio-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
-.atrio-calendar .fc .fc-button-primary:not(:disabled):active {
-  color: #fff;
-}
-.atrio-calendar .fc .fc-col-header-cell-cushion,
-.atrio-calendar .fc .fc-daygrid-day-number {
-  color: rgb(var(--text-secondary));
-  text-decoration: none;
-  font-size: 12px;
-  padding: 4px 6px;
-}
-.atrio-calendar .fc .fc-event {
-  border: none;
-  border-radius: 6px;
-  padding: 1px 5px;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.atrio-calendar .fc-done {
-  opacity: 0.5;
-  text-decoration: line-through;
-}
-/* bloques del timeGrid (Agenda): legibles y redondeados */
-.atrio-calendar .fc-timegrid-event {
-  border-radius: 7px;
-  border: none;
-  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.08);
-}
-.atrio-calendar .fc-timegrid-event .fc-event-main {
-  padding: 0;
-  color: #fff;
-}
-.atrio-calendar .fc-timegrid-slot {
-  height: 2.4em;
-}
-.atrio-calendar .fc-timegrid-slot-label-cushion {
-  font-size: 11px;
-  color: rgb(var(--text-tertiary));
-}
-.atrio-calendar .fc-timegrid-now-indicator-line {
-  border-color: #e5624f;
-}
-.atrio-calendar .fc-timegrid-now-indicator-arrow {
-  border-color: #e5624f;
-  background: #e5624f;
-}
-.atrio-calendar .fc-timegrid-col.fc-day-today {
-  background: rgb(var(--accent-soft) / 0.25);
-}
-
-.atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 12px;
-}
-@media (max-width: 640px) {
-  .atrio-calendar {
-    padding: 8px;
-  }
-  .atrio-calendar .fc .fc-toolbar-title {
-    font-size: 0.95rem;
-  }
-  .atrio-calendar .fc .fc-toolbar.fc-header-toolbar {
-    justify-content: space-between;
-  }
 }
 
 /* ---------- BlockNote ---------- */
