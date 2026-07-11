@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import esLocale from "@fullcalendar/core/locales/es";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, List, Columns3, CalendarClock, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, List, CalendarRange, CalendarClock, Plus } from "lucide-react";
 import { useAllTasks, useMyTasks, useUpdateTask, useToggleTask, type TaskWithTags } from "@/hooks/tasks";
-import { useEvents, useUpdateEvent } from "@/hooks/events";
+import { useEvents } from "@/hooks/events";
 import { useIdentity } from "@/stores/identity";
 import { useUI, usePrefs } from "@/stores/ui";
 import { Segmented } from "@/components/ui/Segmented";
@@ -18,7 +14,7 @@ import { StatusCheckbox, PriorityDot, ScheduleControl, DueChip } from "@/compone
 import { EventDialog } from "@/components/calendar/EventDialog";
 import { fireConfetti } from "@/lib/confetti";
 import { playChime } from "@/lib/sound";
-import { hm, timeOfDay, cn } from "@/lib/utils";
+import { hm, timeOfDay, readableText, cn } from "@/lib/utils";
 import type { CalEvent } from "@/lib/types/database";
 
 const ymd = (d: Date) => format(d, "yyyy-MM-dd");
@@ -27,15 +23,14 @@ const addDays = (d: Date, n: number) => {
   x.setDate(x.getDate() + n);
   return x;
 };
-
-function minutesOf(t?: string | null) {
+const minutesOf = (t?: string | null) => {
   if (!t) return 0;
   const [h, m] = hm(t).split(":").map(Number);
   return h * 60 + m;
-}
+};
 function durationLabel(start?: string | null, end?: string | null) {
   if (!start || !end) return "";
-  let mins = minutesOf(end) - minutesOf(start);
+  const mins = minutesOf(end) - minutesOf(start);
   if (mins <= 0) return "";
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -43,16 +38,14 @@ function durationLabel(start?: string | null, end?: string | null) {
 }
 
 type Item =
-  | { kind: "task"; sort: number; start: string; end: string | null; task: TaskWithTags; color: string }
-  | { kind: "event"; sort: number; start: string; end: string | null; allDay: boolean; event: CalEvent; color: string };
+  | { kind: "task"; start: string; end: string | null; task: TaskWithTags; color: string }
+  | { kind: "event"; start: string; end: string | null; allDay: boolean; event: CalEvent; color: string };
 
 export function AgendaView() {
   const me = useIdentity((s) => s.profileId);
   const { data: tasks } = useAllTasks();
   const { data: myTasks } = useMyTasks(me);
   const { data: events } = useEvents();
-  const updateTask = useUpdateTask();
-  const updateEvent = useUpdateEvent();
   const openPeek = useUI((s) => s.openPeek);
 
   const [view, setView] = useState<"list" | "grid">("list");
@@ -60,21 +53,14 @@ export function AgendaView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CalEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
-  const calRef = useRef<FullCalendar>(null);
   const dateStr = ymd(date);
   const isToday = ymd(new Date()) === dateStr;
 
-  useEffect(() => {
-    if (view === "grid") calRef.current?.getApi().gotoDate(date);
-  }, [view, date]);
-
-  // ítems del día (bloques de tareas + eventos), ordenados
   const timeline = useMemo<Item[]>(() => {
     const taskItems: Item[] = (tasks ?? [])
       .filter((t) => t.start_date === dateStr && t.start_time)
       .map((t) => ({
         kind: "task",
-        sort: minutesOf(t.start_time),
         start: hm(t.start_time),
         end: t.end_time ? hm(t.end_time) : null,
         task: t,
@@ -84,17 +70,19 @@ export function AgendaView() {
       .filter((e) => format(parseISO(e.starts_at), "yyyy-MM-dd") === dateStr)
       .map((e) => ({
         kind: "event",
-        sort: e.all_day ? -1 : minutesOf(timeOfDay(e.starts_at)),
         start: e.all_day ? "" : timeOfDay(e.starts_at),
         end: e.ends_at ? timeOfDay(e.ends_at) : null,
         allDay: e.all_day,
         event: e,
         color: e.color ?? "#8E7CC3",
       }));
-    return [...taskItems, ...evItems].sort((a, b) => a.sort - b.sort);
+    return [...taskItems, ...evItems].sort((a, b) => {
+      const am = a.kind === "event" && (a as any).allDay ? -1 : minutesOf(a.start);
+      const bm = b.kind === "event" && (b as any).allDay ? -1 : minutesOf(b.start);
+      return am - bm;
+    });
   }, [tasks, events, dateStr]);
 
-  // "para hoy" — mis tareas pendientes con vencimiento hoy y sin bloque horario
   const paraHoy = useMemo(
     () =>
       (myTasks ?? []).filter(
@@ -122,6 +110,11 @@ export function AgendaView() {
     return parts.length ? parts.join(" · ") : "Día libre";
   }
 
+  function newEvent() {
+    setEditing(null);
+    setDefaultDate(dateStr);
+    setDialogOpen(true);
+  }
   function openEvent(e: CalEvent) {
     setEditing(e);
     setDefaultDate(undefined);
@@ -130,7 +123,6 @@ export function AgendaView() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* header con navegación de día + toggle */}
       <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-1">
           <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} aria-label="Día anterior">
@@ -156,12 +148,18 @@ export function AgendaView() {
           <div className="text-2xs text-ink-secondary">{summary()}</div>
         </div>
         <div className="flex-1" />
+        <button
+          onClick={newEvent}
+          className="hidden items-center gap-1.5 rounded-lg border border-hairline px-2.5 py-1.5 text-[13px] text-ink-secondary transition-colors hover:bg-surface-hover hover:text-ink sm:inline-flex"
+        >
+          <Plus size={14} /> Evento
+        </button>
         <Segmented
           value={view}
           onChange={setView}
           options={[
             { value: "list", label: "Lista", icon: <List size={14} /> },
-            { value: "grid", label: "Grilla", icon: <Columns3 size={14} /> },
+            { value: "grid", label: "Timeline", icon: <CalendarRange size={14} /> },
           ]}
         />
       </div>
@@ -177,11 +175,7 @@ export function AgendaView() {
                 className="mt-10"
                 action={
                   <button
-                    onClick={() => {
-                      setEditing(null);
-                      setDefaultDate(dateStr);
-                      setDialogOpen(true);
-                    }}
+                    onClick={newEvent}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[13px] font-medium text-accent-fg transition hover:opacity-90"
                   >
                     <Plus size={15} /> Nuevo evento
@@ -190,7 +184,6 @@ export function AgendaView() {
               />
             ) : (
               <>
-                {/* timeline del día */}
                 <div className="space-y-1.5">
                   {timeline.map((item) =>
                     item.kind === "task" ? (
@@ -200,8 +193,6 @@ export function AgendaView() {
                     )
                   )}
                 </div>
-
-                {/* para hoy sin horario */}
                 {paraHoy.length > 0 && (
                   <div className="mt-6">
                     <div className="mb-2 flex items-center gap-1.5 px-1 text-2xs font-semibold uppercase tracking-wide text-ink-tertiary">
@@ -214,13 +205,8 @@ export function AgendaView() {
                     </div>
                   </div>
                 )}
-
                 <button
-                  onClick={() => {
-                    setEditing(null);
-                    setDefaultDate(dateStr);
-                    setDialogOpen(true);
-                  }}
+                  onClick={newEvent}
                   className="mt-4 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-tertiary transition-colors hover:bg-surface-hover hover:text-ink-secondary"
                 >
                   <Plus size={15} /> Agregar evento
@@ -230,70 +216,12 @@ export function AgendaView() {
           </div>
         </div>
       ) : (
-        <div className="atrio-calendar min-h-0 flex-1 p-3">
-          <FullCalendar
-            ref={calRef}
-            plugins={[timeGridPlugin, interactionPlugin]}
-            initialView="timeGridDay"
-            initialDate={dateStr}
-            locale={esLocale}
-            headerToolbar={false}
-            nowIndicator
-            allDaySlot={false}
-            slotMinTime="07:00:00"
-            slotMaxTime="23:00:00"
-            scrollTime="08:00:00"
-            slotDuration="00:30:00"
-            slotLabelInterval="01:00"
-            expandRows
-            height="100%"
-            eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
-            events={[
-              ...(tasks ?? [])
-                .filter((t) => t.start_date && t.start_time)
-                .map((t) => ({
-                  id: `task:${t.id}`,
-                  title: t.title,
-                  start: `${t.start_date}T${t.start_time}`,
-                  end: t.end_time ? `${t.start_date}T${t.end_time}` : undefined,
-                  backgroundColor: t.project?.color ?? "#2383E2",
-                  borderColor: "transparent",
-                  classNames: t.status === "done" ? ["fc-done"] : [],
-                })),
-              ...(events ?? []).map((e) => ({
-                id: `evt:${e.id}`,
-                title: e.title,
-                start: e.starts_at,
-                end: e.ends_at ?? undefined,
-                allDay: e.all_day,
-                backgroundColor: e.color ?? "#8E7CC3",
-                borderColor: "transparent",
-              })),
-            ]}
-            editable
-            eventContent={(arg: any) => (
-              <div className="flex h-full flex-col overflow-hidden px-1.5 py-0.5 leading-tight">
-                <span className="truncate text-[12px] font-semibold">{arg.event.title}</span>
-                {arg.timeText && <span className="text-[10px] opacity-85">{arg.timeText}</span>}
-              </div>
-            )}
-            eventClick={(info: any) => {
-              const id = String(info.event.id);
-              if (id.startsWith("task:")) openPeek({ kind: "task", id: id.slice(5) });
-              else {
-                const ev = (events ?? []).find((e) => e.id === id.slice(4));
-                if (ev) openEvent(ev);
-              }
-            }}
-            eventDrop={(info: any) => applyDrag(info, updateTask, updateEvent)}
-            eventResize={(info: any) => applyDrag(info, updateTask, updateEvent)}
-            dateClick={(info: any) => {
-              setEditing(null);
-              setDefaultDate(String(info.dateStr).slice(0, 10));
-              setDialogOpen(true);
-            }}
-          />
-        </div>
+        <DayTimeline
+          items={timeline}
+          isToday={isToday}
+          onOpenTask={(id) => openPeek({ kind: "task", id })}
+          onOpenEvent={openEvent}
+        />
       )}
 
       <EventDialog open={dialogOpen} onOpenChange={setDialogOpen} event={editing} defaultDate={defaultDate} />
@@ -301,24 +229,167 @@ export function AgendaView() {
   );
 }
 
-function applyDrag(info: any, updateTask: any, updateEvent: any) {
-  const id = String(info.event.id);
-  const s: Date | null = info.event.start;
-  const e: Date | null = info.event.end;
-  if (!s) return;
-  if (id.startsWith("task:")) {
-    updateTask.mutate({
-      id: id.slice(5),
-      start_date: format(s, "yyyy-MM-dd"),
-      start_time: format(s, "HH:mm:ss"),
-      end_time: e ? format(e, "HH:mm:ss") : null,
+/* ---------------- Timeline propio (vista Grilla) ---------------- */
+
+const START_H = 7;
+const END_H = 23;
+const HOUR = 56; // px por hora
+
+function DayTimeline({
+  items,
+  isToday,
+  onOpenTask,
+  onOpenEvent,
+}: {
+  items: Item[];
+  isToday: boolean;
+  onOpenTask: (id: string) => void;
+  onOpenEvent: (e: CalEvent) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const total = (END_H - START_H) * HOUR;
+  const hours = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowTop = isToday ? ((nowMin - START_H * 60) / 60) * HOUR : -1;
+
+  const allDay = items.filter((i) => i.kind === "event" && (i as any).allDay) as Extract<Item, { kind: "event" }>[];
+  const timed = items.filter((i) => !(i.kind === "event" && (i as any).allDay));
+
+  // lanes para solapamientos
+  const placed = useMemo(() => {
+    const withMin = timed
+      .map((it) => {
+        const s = minutesOf(it.start);
+        const e = it.end ? minutesOf(it.end) : s + 60;
+        return { it, s, e: Math.max(e, s + 30) };
+      })
+      .sort((a, b) => a.s - b.s);
+    const laneEnds: number[] = [];
+    const out = withMin.map((x) => {
+      let lane = laneEnds.findIndex((end) => end <= x.s);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(0);
+      }
+      laneEnds[lane] = x.e;
+      return { ...x, lane };
     });
-  } else {
-    updateEvent.mutate({ id: id.slice(4), starts_at: s.toISOString(), ends_at: e ? e.toISOString() : null });
-  }
+    return { out, lanes: Math.max(1, laneEnds.length) };
+  }, [timed]);
+
+  useEffect(() => {
+    const target = ((Math.max(nowMin, 8 * 60) - START_H * 60) / 60) * HOUR - 60;
+    scrollRef.current?.scrollTo({ top: Math.max(0, target) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      {allDay.length > 0 && (
+        <div className="mx-auto flex max-w-3xl flex-wrap gap-1.5 px-4 pt-3 sm:px-6">
+          {allDay.map((i) => (
+            <button
+              key={i.event.id}
+              onClick={() => onOpenEvent(i.event)}
+              className="rounded-md px-2 py-1 text-2xs font-medium"
+              style={{ background: i.color, color: readableText(i.color) }}
+            >
+              {i.event.title}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="mx-auto max-w-3xl px-3 py-4 sm:px-6">
+        <div className="flex">
+          {/* gutter de horas */}
+          <div className="relative w-12 shrink-0" style={{ height: total }}>
+            {hours.map((h) => (
+              <div
+                key={h}
+                className="absolute right-2 -translate-y-1/2 text-2xs tabular-nums text-ink-tertiary"
+                style={{ top: (h - START_H) * HOUR }}
+              >
+                {String(h).padStart(2, "0")}:00
+              </div>
+            ))}
+          </div>
+
+          {/* track */}
+          <div className="relative flex-1 rounded-xl border border-hairline bg-surface/30" style={{ height: total }}>
+            {hours.map((h) => (
+              <div
+                key={h}
+                className="absolute left-0 right-0 border-t border-hairline/70"
+                style={{ top: (h - START_H) * HOUR }}
+              />
+            ))}
+
+            {isToday && nowTop >= 0 && nowTop <= total && (
+              <div className="absolute left-0 right-0 z-20" style={{ top: nowTop }}>
+                <div className="relative border-t-2 border-[#E5624F]">
+                  <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#E5624F]" />
+                  <span className="absolute -top-2 right-1 rounded bg-[#E5624F] px-1 text-[10px] font-medium tabular-nums text-white">
+                    {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {placed.out.map(({ it, s, e, lane }) => {
+              const top = ((s - START_H * 60) / 60) * HOUR;
+              const height = Math.max(((e - s) / 60) * HOUR - 3, 24);
+              const w = 100 / placed.lanes;
+              const isTask = it.kind === "task";
+              const title = isTask ? it.task.title : it.event.title;
+              const done = isTask && it.task.status === "done";
+              return (
+                <button
+                  key={isTask ? `t-${it.task.id}` : `e-${it.event.id}`}
+                  onClick={() => (isTask ? onOpenTask(it.task.id) : onOpenEvent(it.event))}
+                  className={cn(
+                    "absolute z-10 overflow-hidden rounded-lg px-2 py-1 text-left shadow-sm transition-shadow hover:shadow-float",
+                    done && "opacity-60"
+                  )}
+                  style={{
+                    top,
+                    height,
+                    left: `calc(${lane * w}% + 2px)`,
+                    width: `calc(${w}% - 4px)`,
+                    background: it.color,
+                    color: readableText(it.color),
+                  }}
+                >
+                  <div className={cn("truncate text-[12px] font-semibold leading-tight", done && "line-through")}>
+                    {title}
+                  </div>
+                  {height > 30 && (
+                    <div className="truncate text-[10px] tabular-nums opacity-90">
+                      {it.start}
+                      {it.end ? `–${it.end}` : ""}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            {timed.length === 0 && (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center">
+                <p className="text-[13px] text-ink-tertiary">
+                  {isToday ? "Sin bloques hoy." : "Sin bloques este día."}{" "}
+                  <span className="text-ink-secondary">Agendá una tarea o creá un evento.</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-/* -------- filas del timeline (lista) -------- */
+/* ---------------- filas de la lista ---------------- */
 
 function TimeCol({ start, end, allDay }: { start: string; end: string | null; allDay?: boolean }) {
   return (
