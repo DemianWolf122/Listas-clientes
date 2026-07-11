@@ -55,7 +55,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
-          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+          <main className="relative min-h-0 flex-1 overflow-hidden">
+            {/* capa decorativa del tema activo (grids, hexágonos, luciérnagas…) */}
+            <div aria-hidden className="theme-backdrop" />
+            <div className="relative z-[1] h-full">{children}</div>
+          </main>
         </div>
         <CommandPalette />
         <TaskSidePeek />
