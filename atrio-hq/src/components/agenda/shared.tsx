@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { format, parseISO, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { Plus } from "lucide-react";
-import { useAllTasks, type TaskWithTags } from "@/hooks/tasks";
+import { useAllTasks, useUpdateTask, type TaskWithTags } from "@/hooks/tasks";
 import { useEvents } from "@/hooks/events";
 import { Avatar } from "@/components/ui/Avatar";
-import { PriorityDot } from "@/components/tasks/controls";
+import { PriorityDot, AssigneeControl } from "@/components/tasks/controls";
 import { hm, timeOfDay, cn } from "@/lib/utils";
 import type { CalEvent, Profile } from "@/lib/types/database";
 
@@ -136,12 +136,22 @@ export function AgendaCard({
   onOpenTask: (id: string) => void;
   onOpenEvent: (e: CalEvent) => void;
 }) {
+  const update = useUpdateTask();
   const assignee = card.assigneeId ? profileMap[card.assigneeId] : undefined;
+  const open = () => (card.task ? onOpenTask(card.task.id) : card.event ? onOpenEvent(card.event) : undefined);
   return (
-    <button
-      onClick={() => (card.task ? onOpenTask(card.task.id) : card.event ? onOpenEvent(card.event) : undefined)}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      }}
       className={cn(
-        "w-full rounded-xl border p-2.5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-subtle",
+        "w-full cursor-pointer rounded-xl border p-2.5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-subtle",
         card.done && "opacity-60"
       )}
       style={{
@@ -165,9 +175,18 @@ export function AgendaCard({
       {card.subtitle && <div className="truncate text-2xs text-ink-secondary">{card.subtitle}</div>}
       <div className="mt-1.5 flex items-center justify-between gap-1">
         <span className="truncate text-2xs font-medium tnum text-ink-tertiary">{card.timeLabel}</span>
-        {assignee && <Avatar profile={assignee} size={18} />}
+        {card.task ? (
+          <AssigneeControl
+            compact
+            size={18}
+            value={card.assigneeId ?? null}
+            onChange={(v) => update.mutate({ id: card.task!.id, assignee_id: v, notifyAssignee: true })}
+          />
+        ) : (
+          assignee && <Avatar profile={assignee} size={18} />
+        )}
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -189,8 +208,21 @@ export function WeekBoard({
   onOpenTask: (id: string) => void;
   onOpenEvent: (e: CalEvent) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const todayRef = useRef<HTMLDivElement>(null);
+  const weekStartTs = weekDays[0]?.getTime();
+
+  // Centrar automáticamente la columna de hoy (si está en la semana visible).
+  useEffect(() => {
+    const c = scrollRef.current;
+    if (!c) return;
+    const t = todayRef.current;
+    if (t) c.scrollTo({ left: Math.max(0, t.offsetLeft - (c.clientWidth - t.clientWidth) / 2) });
+    else c.scrollTo({ left: 0 });
+  }, [weekStartTs]);
+
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
       <div className="flex min-w-[860px] gap-2.5 p-3 sm:px-4">
         {weekDays.map((day) => {
           const dayStr = ymd(day);
@@ -198,7 +230,7 @@ export function WeekBoard({
           const weekend = day.getDay() === 0 || day.getDay() === 6;
           const cards = cardsByDay[dayStr] ?? [];
           return (
-            <div key={dayStr} className="flex min-w-[118px] flex-1 flex-col">
+            <div key={dayStr} ref={today ? todayRef : undefined} className="flex min-w-[118px] flex-1 flex-col">
               {/* header del día → toca para abrir ese día en vista Día */}
               <button
                 onClick={() => onDayHeaderClick(day)}

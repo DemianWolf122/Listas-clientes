@@ -5,11 +5,22 @@ import { toast } from "sonner";
 import { Check, FolderOpen } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Button } from "@/components/ui/Button";
-import { AssigneeControl, DeadlineControl, ScheduleControl, PriorityControl } from "./controls";
+import { AutoTextarea } from "@/components/ui/AutoTextarea";
+import {
+  AssigneeControl,
+  DeadlineControl,
+  ScheduleControl,
+  PriorityControl,
+  StatusControl,
+  TagPicker,
+  TagChips,
+} from "./controls";
 import { useProjects } from "@/hooks/projects";
 import { useCreateTask } from "@/hooks/tasks";
+import { useToggleTaskTag } from "@/hooks/tags";
 import { useIdentity } from "@/stores/identity";
-import type { Priority } from "@/lib/constants";
+import type { Priority, TaskStatus } from "@/lib/constants";
+import type { Tag } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
 export function QuickAddTask({
@@ -26,8 +37,10 @@ export function QuickAddTask({
   const me = useIdentity((s) => s.profileId);
   const { data: projects } = useProjects();
   const create = useCreateTask();
+  const toggleTag = useToggleTaskTag();
 
   const [title, setTitle] = useState(prefillTitle ?? "");
+  const [description, setDescription] = useState("");
   const [project, setProject] = useState<string | null>(projectId ?? null);
   const [assignee, setAssignee] = useState<string | null>(me);
   const [due, setDue] = useState<string | null>(null);
@@ -38,11 +51,14 @@ export function QuickAddTask({
     end: null,
   });
   const [priority, setPriority] = useState<Priority>("none");
+  const [status, setStatus] = useState<TaskStatus>("todo");
+  const [tags, setTags] = useState<Tag[]>([]);
 
   async function submit() {
     if (!title.trim()) return;
-    await create.mutateAsync({
+    const task = await create.mutateAsync({
       title: title.trim(),
+      description: description.trim() || null,
       project_id: project,
       section_id: sectionId ?? null,
       assignee_id: assignee,
@@ -52,7 +68,9 @@ export function QuickAddTask({
       start_time: sched.start,
       end_time: sched.end,
       priority,
+      status,
     });
+    await Promise.all(tags.map((t) => toggleTag.mutateAsync({ taskId: task.id, tagId: t.id, on: true })));
     toast.success("Tarea creada ✍️");
     onDone();
   }
@@ -80,6 +98,13 @@ export function QuickAddTask({
           className="w-full resize-none border-none bg-transparent text-lg font-medium text-ink outline-none placeholder:text-ink-tertiary"
         />
 
+        <AutoTextarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descripción (opcional): detalles, checklist, links…"
+          className="mt-1 min-h-[64px] w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-[14px] leading-relaxed text-ink outline-none transition placeholder:text-ink-tertiary focus:border-hairline focus:bg-surface/40 focus:px-2"
+        />
+
         <div className="mt-4 space-y-1 border-t border-hairline pt-4">
           <Field label="Proyecto">
             <ProjectPicker
@@ -92,6 +117,9 @@ export function QuickAddTask({
           </Field>
           <Field label="Responsable">
             <AssigneeControl value={assignee} onChange={setAssignee} />
+          </Field>
+          <Field label="Estado">
+            <StatusControl showLabel value={status} onChange={setStatus} />
           </Field>
           <Field label="Entrega">
             <DeadlineControl
@@ -108,6 +136,12 @@ export function QuickAddTask({
           </Field>
           <Field label="Prioridad">
             <PriorityControl value={priority} onChange={setPriority} />
+          </Field>
+          <Field label="Etiquetas">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <TagChips tags={tags} onRemove={(id) => setTags((ts) => ts.filter((t) => t.id !== id))} />
+              <TagPicker value={tags} onChange={setTags} />
+            </div>
           </Field>
         </div>
       </div>
