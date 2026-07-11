@@ -15,6 +15,16 @@ const nextConfig = {
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
+  async headers() {
+    return [
+      {
+        // El service worker NO debe cachearse, si no las actualizaciones
+        // (p. ej. el handler de push) no llegan a los dispositivos.
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

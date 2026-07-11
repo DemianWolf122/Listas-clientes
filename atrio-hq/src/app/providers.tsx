@@ -26,7 +26,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initPWA();
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker
+        .register("/sw.js", { updateViaCache: "none" })
+        .then((reg) => reg.update().catch(() => {}))
+        .catch(() => {});
     }
   }, []);
 
