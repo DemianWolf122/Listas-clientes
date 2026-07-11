@@ -56,10 +56,18 @@ export default function SettingsPage() {
             <ThemeBtn active={mounted && theme === "system"} onClick={() => setTheme("system")} icon={<Monitor size={15} />} label="Sistema" />
           </div>
           <div className="mt-4 mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-tertiary">
-            <Palette size={13} /> Temas
+            <Palette size={13} /> Temas ilustrados
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {CUSTOM_THEMES.map((t) => (
+            {CUSTOM_THEMES.filter((t) => !t.simple).map((t) => (
+              <ThemeCard key={t.id} t={t} active={mounted && theme === t.id} onClick={() => setTheme(t.id)} />
+            ))}
+          </div>
+          <div className="mt-4 mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-tertiary">
+            <Palette size={13} /> Temas lisos · mismos colores, sin dibujos
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {CUSTOM_THEMES.filter((t) => t.simple).map((t) => (
               <ThemeCard key={t.id} t={t} active={mounted && theme === t.id} onClick={() => setTheme(t.id)} />
             ))}
           </div>

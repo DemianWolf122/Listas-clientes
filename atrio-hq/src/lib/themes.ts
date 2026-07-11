@@ -10,9 +10,11 @@ export type ThemeDef = {
   emoji: string;
   /** true → el editor de docs y demás detalles se renderizan en modo oscuro */
   dark: boolean;
+  /** true → variante lisa: mismos colores pero sin escena ilustrada */
+  simple?: boolean;
 };
 
-export const CUSTOM_THEMES: ThemeDef[] = [
+const BASE_THEMES: ThemeDef[] = [
   { id: "rosa", label: "Rosa", emoji: "🌸", dark: false },
   { id: "amarillo", label: "Amarillo", emoji: "🌻", dark: false },
   { id: "lavanda", label: "Lavanda", emoji: "💜", dark: false },
@@ -28,6 +30,12 @@ export const CUSTOM_THEMES: ThemeDef[] = [
   { id: "elfhame", label: "El Príncipe Cruel", emoji: "👑", dark: true },
   { id: "galaxia", label: "Galaxia", emoji: "🌌", dark: true },
   { id: "arcade", label: "Arcade", emoji: "👾", dark: true },
+];
+
+/** Ilustrados + variantes lisas (mismos colores, sin dibujos). */
+export const CUSTOM_THEMES: ThemeDef[] = [
+  ...BASE_THEMES,
+  ...BASE_THEMES.map((t) => ({ ...t, id: `${t.id}-liso`, label: `${t.label} liso`, simple: true })),
 ];
 
 /** Lista completa para next-themes. */
