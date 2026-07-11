@@ -200,38 +200,50 @@ function CalendarSync({ meId }: { meId?: string }) {
 
   return (
     <div className="space-y-2.5">
-      {feeds.map((f) => (
-        <div key={f.key} className="rounded-xl border border-hairline p-2.5">
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <span className="text-[13px] font-medium text-ink">{f.label}</span>
-            <a
-              href={f.url.replace(/^https?:\/\//, "webcal://")}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-accent px-2 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90"
-            >
-              <ExternalLink size={12} /> Suscribir
-            </a>
+      {feeds.map((f) => {
+        const webcal = f.url.replace(/^https?:\/\//, "webcal://");
+        const google = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`;
+        return (
+          <div key={f.key} className="rounded-xl border border-hairline p-2.5">
+            <div className="mb-1.5 text-[13px] font-medium text-ink">{f.label}</div>
+            <div className="mb-2 flex items-center gap-1.5">
+              <code className="min-w-0 flex-1 truncate rounded-md bg-surface px-2 py-1.5 text-2xs text-ink-secondary">{f.url}</code>
+              <button
+                onClick={() => copy(f.url, f.key)}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-hairline px-2 py-1.5 text-2xs font-medium text-ink transition hover:bg-surface-hover"
+              >
+                {copied === f.key ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
+                {copied === f.key ? "¡Copiado!" : "Copiar"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <a
+                href={google}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-md bg-accent px-2.5 py-1 text-2xs font-medium text-accent-fg transition hover:opacity-90"
+              >
+                <ExternalLink size={12} /> Google Calendar
+              </a>
+              <a
+                href={webcal}
+                className="inline-flex items-center gap-1 rounded-md border border-hairline px-2.5 py-1 text-2xs font-medium text-ink transition hover:bg-surface-hover"
+              >
+                <ExternalLink size={12} /> Apple (iPhone/iPad)
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <code className="min-w-0 flex-1 truncate rounded-md bg-surface px-2 py-1.5 text-2xs text-ink-secondary">{f.url}</code>
-            <button
-              onClick={() => copy(f.url, f.key)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-hairline px-2 py-1.5 text-2xs font-medium text-ink transition hover:bg-surface-hover"
-            >
-              {copied === f.key ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
-              {copied === f.key ? "Copiado" : "Copiar"}
-            </button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
       <div className="rounded-xl bg-surface/60 p-3 text-2xs leading-relaxed text-ink-secondary">
         <p className="mb-1 font-semibold text-ink">Cómo suscribirte</p>
         <p>
-          <span className="font-medium text-ink">iPhone / iPad:</span> tocá “Suscribir” y confirmá. (O: Ajustes →
-          Calendario → Cuentas → Añadir cuenta → Otra → Añadir calendario suscrito.)
+          <span className="font-medium text-ink">Android / Google Calendar:</span> tocá “Google Calendar” y confirmá. Si
+          no abre, tocá “Copiar” y en la compu andá a Google Calendar → “Otros calendarios” → “+” → “Desde una URL” →
+          pegá el link. Después aparece en el teléfono.
         </p>
         <p className="mt-1">
-          <span className="font-medium text-ink">Google Calendar:</span> en la compu, “Otros calendarios” → “+” → Desde
-          una URL → pegá el link copiado.
+          <span className="font-medium text-ink">iPhone / iPad:</span> tocá “Apple” y confirmá.
         </p>
       </div>
     </div>

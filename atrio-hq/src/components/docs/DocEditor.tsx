@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { locales, type PartialBlock } from "@blocknote/core";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, ArrowLeft } from "lucide-react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { Spinner } from "@/components/ui/Spinner";
@@ -63,7 +63,15 @@ function Editor({ doc }: { doc: Doc }) {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-6 py-10 sm:px-12">
         {/* header */}
-        <div className="group/head mb-1 flex items-center justify-end">
+        <div className="group/head mb-1 flex items-center gap-1">
+          <button
+            onClick={() => router.push("/docs")}
+            className="icon-btn -ml-1 shrink-0 md:hidden"
+            aria-label="Volver a Docs"
+            title="Volver a Docs"
+          >
+            <ArrowLeft size={18} />
+          </button>
           <span className="mr-auto text-2xs text-ink-tertiary opacity-0 transition-opacity group-hover/head:opacity-100">
             Editado {relativeTime(doc.updated_at)}
           </span>
