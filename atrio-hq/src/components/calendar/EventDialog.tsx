@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
@@ -36,13 +37,15 @@ export function EventDialog({
       if (event) {
         const d = new Date(event.starts_at);
         setTitle(event.title);
-        setDate(d.toISOString().slice(0, 10));
-        setTime(d.toTimeString().slice(0, 5));
+        // Formateamos en la zona local del dispositivo (los dos estamos en Buenos Aires),
+        // para que la hora que se ve al editar sea la misma que se cargó.
+        setDate(format(d, "yyyy-MM-dd"));
+        setTime(format(d, "HH:mm"));
         setAllDay(event.all_day);
         setColor(event.color ?? PASTELS[4]);
       } else {
         setTitle("");
-        setDate(defaultDate ?? new Date().toISOString().slice(0, 10));
+        setDate(defaultDate ?? format(new Date(), "yyyy-MM-dd"));
         setTime("10:00");
         setAllDay(false);
         setColor(PASTELS[4]);
@@ -52,7 +55,10 @@ export function EventDialog({
 
   async function save() {
     if (!title.trim() || !date) return;
-    const starts_at = allDay ? `${date}T00:00:00` : `${date}T${time}:00`;
+    // Construimos el instante a partir de la hora de pared local: `new Date("...T10:00:00")`
+    // se interpreta en la zona del dispositivo y `.toISOString()` lo guarda en UTC correctamente,
+    // así 10:00 en Buenos Aires se guarda como 13:00Z y se vuelve a mostrar como 10:00.
+    const starts_at = new Date(`${date}T${allDay ? "00:00" : time}:00`).toISOString();
     if (event) {
       await update.mutateAsync({ id: event.id, title: title.trim(), starts_at, all_day: allDay, color });
       toast.success("Evento actualizado");
