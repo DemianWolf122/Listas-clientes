@@ -17,12 +17,15 @@ export function EventDialog({
   event,
   defaultDate,
   defaultTime,
+  projectId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   event?: CalEvent | null;
   defaultDate?: string;
   defaultTime?: string;
+  /** si viene, los eventos nuevos quedan asociados a ese proyecto */
+  projectId?: string;
 }) {
   const create = useCreateEvent();
   const update = useUpdateEvent();
@@ -85,7 +88,7 @@ export function EventDialog({
       await update.mutateAsync({ id: event.id, ...payload });
       toast.success("Evento actualizado");
     } else {
-      await create.mutateAsync({ ...payload, project_id: null });
+      await create.mutateAsync({ ...payload, project_id: projectId ?? null });
       toast.success("Evento creado 📅");
     }
     onOpenChange(false);

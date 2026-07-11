@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone } from "lucide-react";
+import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { PWAInstallButton } from "@/components/settings/PWAInstallButton";
@@ -10,6 +10,7 @@ import { useCurrentProfile } from "@/hooks/profiles";
 import { useIdentity } from "@/stores/identity";
 import { usePrefs } from "@/stores/ui";
 import { useAnnounceViewing } from "@/components/providers/PresenceProvider";
+import { CUSTOM_THEMES, type ThemeDef } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -43,6 +44,14 @@ export default function SettingsPage() {
             <ThemeBtn active={mounted && theme === "light"} onClick={() => setTheme("light")} icon={<Sun size={15} />} label="Claro" />
             <ThemeBtn active={mounted && theme === "dark"} onClick={() => setTheme("dark")} icon={<Moon size={15} />} label="Oscuro" />
             <ThemeBtn active={mounted && theme === "system"} onClick={() => setTheme("system")} icon={<Monitor size={15} />} label="Sistema" />
+          </div>
+          <div className="mt-4 mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-tertiary">
+            <Palette size={13} /> Temas
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {CUSTOM_THEMES.map((t) => (
+              <ThemeCard key={t.id} t={t} active={mounted && theme === t.id} onClick={() => setTheme(t.id)} />
+            ))}
           </div>
         </Section>
 
@@ -126,6 +135,38 @@ function ThemeBtn({
     >
       {icon}
       {label}
+    </button>
+  );
+}
+
+function ThemeCard({ t, active, onClick }: { t: ThemeDef; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border p-1.5 text-left transition-all",
+        active ? "border-accent ring-2 ring-accent/25" : "border-hairline hover:border-hairline-strong hover:bg-surface-hover"
+      )}
+    >
+      {/* mini-preview: barra lateral + líneas + botón de acento */}
+      <div
+        className="h-12 w-full rounded-lg border border-black/10 p-1.5"
+        style={{ background: t.swatch[0] }}
+      >
+        <div className="flex h-full gap-1">
+          <div className="w-1/3 rounded-[5px]" style={{ background: t.swatch[2] }} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="h-1.5 w-3/4 rounded-full" style={{ background: t.swatch[2] }} />
+            <div className="h-1.5 w-1/2 rounded-full opacity-70" style={{ background: t.swatch[2] }} />
+            <div className="mt-auto h-2 w-8 rounded-full" style={{ background: t.swatch[1] }} />
+          </div>
+        </div>
+      </div>
+      <div className="mt-1.5 flex items-center gap-1 px-0.5">
+        <span className="text-[13px] leading-none">{t.emoji}</span>
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-ink">{t.label}</span>
+        {active && <Check size={13} className="shrink-0 text-accent" />}
+      </div>
     </button>
   );
 }

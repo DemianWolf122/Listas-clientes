@@ -27,6 +27,10 @@ interface UIState {
   commandOpen: boolean;
   setCommandOpen: (v: boolean) => void;
   toggleCommand: () => void;
+
+  /** Fecha (yyyy-MM-dd) que la Agenda debe abrir en vista Día al montar (salto desde Calendario). */
+  agendaFocus: string | null;
+  setAgendaFocus: (d: string | null) => void;
 }
 
 export const useUI = create<UIState>((set) => ({
@@ -48,6 +52,9 @@ export const useUI = create<UIState>((set) => ({
   commandOpen: false,
   setCommandOpen: (v) => set({ commandOpen: v }),
   toggleCommand: () => set((s) => ({ commandOpen: !s.commandOpen })),
+
+  agendaFocus: null,
+  setAgendaFocus: (d) => set({ agendaFocus: d }),
 }));
 
 /** Preferencias persistidas (sonidos, etc.). */
