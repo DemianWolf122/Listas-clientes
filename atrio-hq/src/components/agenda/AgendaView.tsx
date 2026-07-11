@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { format, parseISO, startOfWeek, addDays as fnsAddDays, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, List, LayoutGrid, Plus, CalendarClock } from "lucide-react";
@@ -69,6 +69,22 @@ export function AgendaView() {
   const dayCards = cardsByDay[ymd(date)] ?? [];
   const timed = dayCards.filter((c) => c.sort < SIN_HORARIO);
   const sinHorario = dayCards.filter((c) => c.sort >= SIN_HORARIO && c.task && c.task.status !== "done");
+
+  // línea "ahora": dónde estás parado en el día (solo si mirás hoy)
+  const [nowMin, setNowMin] = useState(() => {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const d = new Date();
+      setNowMin(d.getHours() * 60 + d.getMinutes());
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const viendoHoy = isSameDay(date, new Date());
+  const nowIdx = timed.findIndex((c) => c.sort >= nowMin);
+  const nowLabel = `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
 
   return (
     <div className="flex h-full flex-col bg-surface/40">
@@ -174,13 +190,17 @@ export function AgendaView() {
             ) : (
               <>
                 <div className="space-y-1.5">
-                  {timed.map((c) =>
-                    c.kind === "task" && c.task ? (
-                      <TaskRow key={c.key} task={c.task} color={c.color} />
-                    ) : c.event ? (
-                      <EventRow key={c.key} event={c.event} color={c.color} onOpen={() => openEvent(c.event!)} />
-                    ) : null
-                  )}
+                  {timed.map((c, i) => (
+                    <Fragment key={c.key}>
+                      {viendoHoy && i === nowIdx && <NowLine label={nowLabel} />}
+                      {c.kind === "task" && c.task ? (
+                        <TaskRow task={c.task} color={c.color} />
+                      ) : c.event ? (
+                        <EventRow event={c.event} color={c.color} onOpen={() => openEvent(c.event!)} />
+                      ) : null}
+                    </Fragment>
+                  ))}
+                  {viendoHoy && timed.length > 0 && nowIdx === -1 && <NowLine label={nowLabel} />}
                 </div>
                 {sinHorario.length > 0 && (
                   <div className="mt-6">
@@ -201,6 +221,17 @@ export function AgendaView() {
       )}
 
       <EventDialog open={dialogOpen} onOpenChange={setDialogOpen} event={editing} defaultDate={defaultDate} />
+    </div>
+  );
+}
+
+/* línea roja de "ahora" en el plan del día */
+function NowLine({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 px-1 py-0.5" aria-hidden>
+      <span className="h-2 w-2 shrink-0 rounded-full bg-[#E5624F]" />
+      <div className="h-px flex-1 bg-[#E5624F]/50" />
+      <span className="text-2xs font-semibold tnum text-[#E5624F]">{label}</span>
     </div>
   );
 }

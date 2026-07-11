@@ -20,9 +20,17 @@ export function useSearch(query: string) {
     queryFn: async (): Promise<SearchResults> => {
       const supabase = supabaseBrowser();
       const like = `%${q}%`;
+      // el filtro .or() usa comas/paréntesis como sintaxis → los sacamos del valor
+      const orSafe = `%${q.replace(/[(),]/g, " ").trim()}%`;
       const [tasks, docs, messages, projects] = await Promise.all([
-        supabase.from("tasks").select("id,title,project_id").ilike("title", like).limit(6),
-        supabase.from("docs").select("id,title,icon").ilike("title", like).limit(6),
+        // título O descripción
+        supabase
+          .from("tasks")
+          .select("id,title,project_id")
+          .or(`title.ilike.${orSafe},description.ilike.${orSafe}`)
+          .limit(6),
+        // título O contenido de los bloques (función SQL search_docs)
+        supabase.rpc("search_docs", { q }),
         supabase
           .from("messages")
           .select("id,body,channel_id")
@@ -33,7 +41,7 @@ export function useSearch(query: string) {
       ]);
       return {
         tasks: tasks.data ?? [],
-        docs: docs.data ?? [],
+        docs: (docs.data as SearchResults["docs"]) ?? [],
         messages: messages.data ?? [],
         projects: projects.data ?? [],
       };
