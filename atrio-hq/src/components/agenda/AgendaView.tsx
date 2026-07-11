@@ -1,28 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format, parseISO, startOfWeek, addDays as fnsAddDays, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, List, CalendarRange, CalendarClock, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, List, LayoutGrid, Plus, CalendarClock } from "lucide-react";
 import { useAllTasks, useMyTasks, useUpdateTask, useToggleTask, type TaskWithTags } from "@/hooks/tasks";
 import { useEvents } from "@/hooks/events";
+import { useProfileMap } from "@/hooks/profiles";
 import { useIdentity } from "@/stores/identity";
 import { useUI, usePrefs } from "@/stores/ui";
 import { Segmented } from "@/components/ui/Segmented";
+import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatusCheckbox, PriorityDot, ScheduleControl, DueChip } from "@/components/tasks/controls";
 import { EventDialog } from "@/components/calendar/EventDialog";
 import { fireConfetti } from "@/lib/confetti";
 import { playChime } from "@/lib/sound";
-import { hm, timeOfDay, readableText, cn } from "@/lib/utils";
-import type { CalEvent } from "@/lib/types/database";
+import { hm, timeOfDay, cn } from "@/lib/utils";
+import type { CalEvent, Profile } from "@/lib/types/database";
 
 const ymd = (d: Date) => format(d, "yyyy-MM-dd");
-const addDays = (d: Date, n: number) => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-};
 const minutesOf = (t?: string | null) => {
   if (!t) return 0;
   const [h, m] = hm(t).split(":").map(Number);
@@ -36,83 +33,54 @@ function durationLabel(start?: string | null, end?: string | null) {
   const m = mins % 60;
   return [h ? `${h} h` : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
 }
+function tint(hex: string, alpha: number) {
+  const h = (hex || "#2383E2").replace("#", "");
+  if (h.length < 6) return `rgba(35,131,226,${alpha})`;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-type Item =
-  | { kind: "task"; start: string; end: string | null; task: TaskWithTags; color: string }
-  | { kind: "event"; start: string; end: string | null; allDay: boolean; event: CalEvent; color: string };
+type Card = {
+  key: string;
+  kind: "task" | "event";
+  color: string;
+  emoji: string;
+  title: string;
+  subtitle?: string;
+  timeLabel: string;
+  sort: number;
+  task?: TaskWithTags;
+  event?: CalEvent;
+  assigneeId?: string | null;
+  done?: boolean;
+};
 
 export function AgendaView() {
   const me = useIdentity((s) => s.profileId);
   const { data: tasks } = useAllTasks();
   const { data: myTasks } = useMyTasks(me);
   const { data: events } = useEvents();
+  const profileMap = useProfileMap();
   const openPeek = useUI((s) => s.openPeek);
 
-  const [view, setView] = useState<"list" | "grid">("list");
+  const [view, setView] = useState<"week" | "day">("week");
   const [date, setDate] = useState<Date>(() => new Date());
+
+  // En teléfonos, la vista de día es más legible que la grilla semanal.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+      setView("day");
+    }
+  }, []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CalEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
-  const dateStr = ymd(date);
-  const isToday = ymd(new Date()) === dateStr;
 
-  const timeline = useMemo<Item[]>(() => {
-    const taskItems: Item[] = (tasks ?? [])
-      .filter((t) => t.start_date === dateStr && t.start_time)
-      .map((t) => ({
-        kind: "task",
-        start: hm(t.start_time),
-        end: t.end_time ? hm(t.end_time) : null,
-        task: t,
-        color: t.project?.color ?? "#2383E2",
-      }));
-    const evItems: Item[] = (events ?? [])
-      .filter((e) => format(parseISO(e.starts_at), "yyyy-MM-dd") === dateStr)
-      .map((e) => ({
-        kind: "event",
-        start: e.all_day ? "" : timeOfDay(e.starts_at),
-        end: e.ends_at ? timeOfDay(e.ends_at) : null,
-        allDay: e.all_day,
-        event: e,
-        color: e.color ?? "#8E7CC3",
-      }));
-    return [...taskItems, ...evItems].sort((a, b) => {
-      const am = a.kind === "event" && (a as any).allDay ? -1 : minutesOf(a.start);
-      const bm = b.kind === "event" && (b as any).allDay ? -1 : minutesOf(b.start);
-      return am - bm;
-    });
-  }, [tasks, events, dateStr]);
-
-  const paraHoy = useMemo(
-    () =>
-      (myTasks ?? []).filter(
-        (t) => t.status !== "done" && t.due_date === dateStr && !(t.start_date === dateStr && t.start_time)
-      ),
-    [myTasks, dateStr]
-  );
-
-  const plannedMin = timeline.reduce(
-    (acc, i) => acc + (i.kind === "task" && i.end ? minutesOf(i.end) - minutesOf(i.start) : 0),
-    0
-  );
-  const blocks = timeline.filter((i) => i.kind === "task").length;
-  const evCount = timeline.filter((i) => i.kind === "event").length;
-
-  function summary() {
-    const parts: string[] = [];
-    if (blocks) parts.push(`${blocks} ${blocks === 1 ? "bloque" : "bloques"}`);
-    if (plannedMin) {
-      const h = Math.floor(plannedMin / 60);
-      const m = plannedMin % 60;
-      parts.push(`${[h ? `${h} h` : "", m ? `${m} min` : ""].filter(Boolean).join(" ")} planificadas`);
-    }
-    if (evCount) parts.push(`${evCount} ${evCount === 1 ? "evento" : "eventos"}`);
-    return parts.length ? parts.join(" · ") : "Día libre";
-  }
-
-  function newEvent() {
+  function newEvent(forDate?: string) {
     setEditing(null);
-    setDefaultDate(dateStr);
+    setDefaultDate(forDate ?? ymd(date));
     setDialogOpen(true);
   }
   function openEvent(e: CalEvent) {
@@ -121,63 +89,178 @@ export function AgendaView() {
     setDialogOpen(true);
   }
 
+  // tarjetas por día (fecha → cards ordenadas)
+  const cardsByDay = useMemo(() => {
+    const map: Record<string, Card[]> = {};
+    const push = (day: string, c: Card) => {
+      (map[day] ||= []).push(c);
+    };
+    (tasks ?? []).forEach((t) => {
+      if (t.start_date && t.start_time) {
+        push(t.start_date, {
+          key: `ts-${t.id}`,
+          kind: "task",
+          color: t.project?.color ?? "#2383E2",
+          emoji: t.project?.emoji ?? "🗒️",
+          title: t.title,
+          subtitle: t.project?.name,
+          timeLabel: `${hm(t.start_time)}${t.end_time ? `–${hm(t.end_time)}` : ""}`,
+          sort: minutesOf(t.start_time),
+          task: t,
+          assigneeId: t.assignee_id,
+          done: t.status === "done",
+        });
+      } else if (t.due_date) {
+        push(t.due_date, {
+          key: `td-${t.id}`,
+          kind: "task",
+          color: t.project?.color ?? "#9B9B98",
+          emoji: t.project?.emoji ?? "🗒️",
+          title: t.title,
+          subtitle: t.project?.name ?? "Sin proyecto",
+          timeLabel: t.due_time ? `entrega ${hm(t.due_time)}` : "vence",
+          sort: t.due_time ? minutesOf(t.due_time) : 2000,
+          task: t,
+          assigneeId: t.assignee_id,
+          done: t.status === "done",
+        });
+      }
+    });
+    (events ?? []).forEach((e) => {
+      const day = format(parseISO(e.starts_at), "yyyy-MM-dd");
+      push(day, {
+        key: `e-${e.id}`,
+        kind: "event",
+        color: e.color ?? "#8E7CC3",
+        emoji: "📅",
+        title: e.title,
+        subtitle: e.description ?? "Evento",
+        timeLabel: e.all_day ? "todo el día" : `${timeOfDay(e.starts_at)}${e.ends_at ? `–${timeOfDay(e.ends_at)}` : ""}`,
+        sort: e.all_day ? -1 : minutesOf(timeOfDay(e.starts_at)),
+        event: e,
+      });
+    });
+    Object.values(map).forEach((arr) => arr.sort((a, b) => a.sort - b.sort));
+    return map;
+  }, [tasks, events]);
+
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => fnsAddDays(weekStart, i));
+  const rangeLabel = `${format(weekStart, "d")}–${format(fnsAddDays(weekStart, 6), "d 'de' MMM", { locale: es })}`;
+
+  // "para hoy" (para la vista Día)
+  const paraHoy = useMemo(
+    () =>
+      (myTasks ?? []).filter(
+        (t) =>
+          t.status !== "done" && t.due_date === ymd(date) && !(t.start_date === ymd(date) && t.start_time)
+      ),
+    [myTasks, date]
+  );
+  const dayCards = cardsByDay[ymd(date)] ?? [];
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-2.5 sm:px-6">
+    <div className="flex h-full flex-col bg-surface/40">
+      {/* header */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-hairline bg-canvas px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-1">
-          <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} aria-label="Día anterior">
+          <button
+            className="icon-btn"
+            onClick={() => setDate(fnsAddDays(date, view === "week" ? -7 : -1))}
+            aria-label="Anterior"
+          >
             <ChevronLeft size={17} />
           </button>
-          <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} aria-label="Día siguiente">
+          <button
+            className="icon-btn"
+            onClick={() => setDate(fnsAddDays(date, view === "week" ? 7 : 1))}
+            aria-label="Siguiente"
+          >
             <ChevronRight size={17} />
           </button>
           <button
             onClick={() => setDate(new Date())}
-            className={cn(
-              "ml-1 rounded-md px-2 py-1 text-[13px] font-medium transition-colors",
-              isToday ? "text-ink-tertiary" : "text-accent hover:bg-accent-soft"
-            )}
+            className="ml-1 rounded-md px-2 py-1 text-[13px] font-medium text-accent transition-colors hover:bg-accent-soft"
           >
             Hoy
           </button>
         </div>
-        <div className="min-w-0">
-          <div className="truncate text-[15px] font-semibold text-ink first-letter:uppercase">
-            {format(date, "EEEE d 'de' MMMM", { locale: es })}
-          </div>
-          <div className="text-2xs text-ink-secondary">{summary()}</div>
+        <div className="min-w-0 text-[15px] font-semibold capitalize text-ink first-letter:uppercase">
+          {view === "week" ? rangeLabel : format(date, "EEEE d 'de' MMMM", { locale: es })}
         </div>
         <div className="flex-1" />
         <button
-          onClick={newEvent}
-          className="hidden items-center gap-1.5 rounded-lg border border-hairline px-2.5 py-1.5 text-[13px] text-ink-secondary transition-colors hover:bg-surface-hover hover:text-ink sm:inline-flex"
+          onClick={() => newEvent()}
+          className="hidden items-center gap-1.5 rounded-lg bg-ink px-2.5 py-1.5 text-[13px] font-medium text-canvas transition hover:opacity-90 sm:inline-flex"
         >
-          <Plus size={14} /> Evento
+          <Plus size={14} /> Nuevo evento
         </button>
         <Segmented
           value={view}
           onChange={setView}
           options={[
-            { value: "list", label: "Lista", icon: <List size={14} /> },
-            { value: "grid", label: "Timeline", icon: <CalendarRange size={14} /> },
+            { value: "week", label: "Semana", icon: <LayoutGrid size={14} /> },
+            { value: "day", label: "Día", icon: <List size={14} /> },
           ]}
         />
       </div>
 
-      {view === "list" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto">
+      {view === "week" ? (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <div className="flex min-w-[860px] gap-2.5 p-3 sm:px-4">
+            {weekDays.map((day) => {
+              const dayStr = ymd(day);
+              const today = isSameDay(day, new Date());
+              const weekend = day.getDay() === 0 || day.getDay() === 6;
+              const cards = cardsByDay[dayStr] ?? [];
+              return (
+                <div key={dayStr} className="flex min-w-[118px] flex-1 flex-col">
+                  {/* header del día */}
+                  <div
+                    className={cn(
+                      "mb-2 rounded-xl border px-3 py-2 text-center transition-colors",
+                      today ? "border-transparent bg-ink text-canvas" : "border-hairline bg-canvas",
+                      weekend && !today && "opacity-70"
+                    )}
+                  >
+                    <div className={cn("text-2xs font-semibold uppercase tracking-wide", today ? "text-canvas/70" : "text-ink-tertiary")}>
+                      {format(day, "EEE", { locale: es })}
+                    </div>
+                    <div className={cn("text-[15px] font-semibold tnum", today ? "text-canvas" : "text-ink")}>
+                      {format(day, "d/MM")}
+                    </div>
+                  </div>
+                  {/* cards del día */}
+                  <div className="group/col min-h-[60px] flex-1 space-y-2 rounded-xl">
+                    {cards.map((c) => (
+                      <AgendaCard key={c.key} card={c} profileMap={profileMap} onOpenTask={(id) => openPeek({ kind: "task", id })} onOpenEvent={openEvent} />
+                    ))}
+                    <button
+                      onClick={() => newEvent(dayStr)}
+                      className={cn(
+                        "flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-hairline py-1.5 text-2xs text-ink-tertiary transition-colors hover:border-accent/40 hover:text-accent",
+                        cards.length > 0 && "opacity-0 group-hover/col:opacity-100"
+                      )}
+                    >
+                      <Plus size={13} /> Evento
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto bg-canvas">
           <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6">
-            {timeline.length === 0 && paraHoy.length === 0 ? (
+            {dayCards.length === 0 && paraHoy.length === 0 ? (
               <EmptyState
                 emoji="🗓️"
-                title={isToday ? "Tu día está libre" : "Nada agendado este día"}
-                hint="Ponele horario a una tarea (campo Agenda en su detalle) o creá un evento para bloquear el tiempo."
+                title={isSameDay(date, new Date()) ? "Tu día está libre" : "Nada agendado este día"}
+                hint="Ponele horario a una tarea (campo Agenda en su detalle) o creá un evento."
                 className="mt-10"
                 action={
-                  <button
-                    onClick={newEvent}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[13px] font-medium text-accent-fg transition hover:opacity-90"
-                  >
+                  <button onClick={() => newEvent()} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[13px] font-medium text-accent-fg transition hover:opacity-90">
                     <Plus size={15} /> Nuevo evento
                   </button>
                 }
@@ -185,12 +268,12 @@ export function AgendaView() {
             ) : (
               <>
                 <div className="space-y-1.5">
-                  {timeline.map((item) =>
-                    item.kind === "task" ? (
-                      <TaskRow key={`t-${item.task.id}`} item={item} />
-                    ) : (
-                      <EventRow key={`e-${item.event.id}`} item={item} onOpen={() => openEvent(item.event)} />
-                    )
+                  {dayCards.map((c) =>
+                    c.kind === "task" && c.task ? (
+                      <TaskRow key={c.key} task={c.task} start={c.timeLabel.includes("–") || /^\d/.test(c.timeLabel) ? c.timeLabel : ""} color={c.color} />
+                    ) : c.event ? (
+                      <EventRow key={c.key} event={c.event} timeLabel={c.timeLabel} color={c.color} onOpen={() => openEvent(c.event!)} />
+                    ) : null
                   )}
                 </div>
                 {paraHoy.length > 0 && (
@@ -200,28 +283,15 @@ export function AgendaView() {
                     </div>
                     <div className="space-y-1">
                       {paraHoy.map((t) => (
-                        <UnscheduledRow key={t.id} task={t} dateStr={dateStr} />
+                        <UnscheduledRow key={t.id} task={t} dateStr={ymd(date)} />
                       ))}
                     </div>
                   </div>
                 )}
-                <button
-                  onClick={newEvent}
-                  className="mt-4 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-tertiary transition-colors hover:bg-surface-hover hover:text-ink-secondary"
-                >
-                  <Plus size={15} /> Agregar evento
-                </button>
               </>
             )}
           </div>
         </div>
-      ) : (
-        <DayTimeline
-          items={timeline}
-          isToday={isToday}
-          onOpenTask={(id) => openPeek({ kind: "task", id })}
-          onOpenEvent={openEvent}
-        />
       )}
 
       <EventDialog open={dialogOpen} onOpenChange={setDialogOpen} event={editing} defaultDate={defaultDate} />
@@ -229,238 +299,108 @@ export function AgendaView() {
   );
 }
 
-/* ---------------- Timeline propio (vista Grilla) ---------------- */
-
-const START_H = 7;
-const END_H = 23;
-const HOUR = 56; // px por hora
-
-function DayTimeline({
-  items,
-  isToday,
+/* ---------------- Tarjeta de agenda (semana) ---------------- */
+function AgendaCard({
+  card,
+  profileMap,
   onOpenTask,
   onOpenEvent,
 }: {
-  items: Item[];
-  isToday: boolean;
+  card: Card;
+  profileMap: Record<string, Profile>;
   onOpenTask: (id: string) => void;
   onOpenEvent: (e: CalEvent) => void;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const total = (END_H - START_H) * HOUR;
-  const hours = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
-
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const nowTop = isToday ? ((nowMin - START_H * 60) / 60) * HOUR : -1;
-
-  const allDay = items.filter((i) => i.kind === "event" && (i as any).allDay) as Extract<Item, { kind: "event" }>[];
-  const timed = items.filter((i) => !(i.kind === "event" && (i as any).allDay));
-
-  // lanes para solapamientos
-  const placed = useMemo(() => {
-    const withMin = timed
-      .map((it) => {
-        const s = minutesOf(it.start);
-        const e = it.end ? minutesOf(it.end) : s + 60;
-        return { it, s, e: Math.max(e, s + 30) };
-      })
-      .sort((a, b) => a.s - b.s);
-    const laneEnds: number[] = [];
-    const out = withMin.map((x) => {
-      let lane = laneEnds.findIndex((end) => end <= x.s);
-      if (lane === -1) {
-        lane = laneEnds.length;
-        laneEnds.push(0);
-      }
-      laneEnds[lane] = x.e;
-      return { ...x, lane };
-    });
-    return { out, lanes: Math.max(1, laneEnds.length) };
-  }, [timed]);
-
-  useEffect(() => {
-    const target = ((Math.max(nowMin, 8 * 60) - START_H * 60) / 60) * HOUR - 60;
-    scrollRef.current?.scrollTo({ top: Math.max(0, target) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  const assignee = card.assigneeId ? profileMap[card.assigneeId] : undefined;
   return (
-    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-      {allDay.length > 0 && (
-        <div className="mx-auto flex max-w-3xl flex-wrap gap-1.5 px-4 pt-3 sm:px-6">
-          {allDay.map((i) => (
-            <button
-              key={i.event.id}
-              onClick={() => onOpenEvent(i.event)}
-              className="rounded-md px-2 py-1 text-2xs font-medium"
-              style={{ background: i.color, color: readableText(i.color) }}
-            >
-              {i.event.title}
-            </button>
-          ))}
-        </div>
+    <button
+      onClick={() => (card.task ? onOpenTask(card.task.id) : card.event ? onOpenEvent(card.event) : undefined)}
+      className={cn(
+        "w-full rounded-xl border p-2.5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-subtle",
+        card.done && "opacity-60"
       )}
-      <div className="mx-auto max-w-3xl px-3 py-4 sm:px-6">
-        <div className="flex">
-          {/* gutter de horas */}
-          <div className="relative w-12 shrink-0" style={{ height: total }}>
-            {hours.map((h) => (
-              <div
-                key={h}
-                className="absolute right-2 -translate-y-1/2 text-2xs tabular-nums text-ink-tertiary"
-                style={{ top: (h - START_H) * HOUR }}
-              >
-                {String(h).padStart(2, "0")}:00
-              </div>
-            ))}
-          </div>
-
-          {/* track */}
-          <div className="relative flex-1 rounded-xl border border-hairline bg-surface/30" style={{ height: total }}>
-            {hours.map((h) => (
-              <div
-                key={h}
-                className="absolute left-0 right-0 border-t border-hairline/70"
-                style={{ top: (h - START_H) * HOUR }}
-              />
-            ))}
-
-            {isToday && nowTop >= 0 && nowTop <= total && (
-              <div className="absolute left-0 right-0 z-20" style={{ top: nowTop }}>
-                <div className="relative border-t-2 border-[#E5624F]">
-                  <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#E5624F]" />
-                  <span className="absolute -top-2 right-1 rounded bg-[#E5624F] px-1 text-[10px] font-medium tabular-nums text-white">
-                    {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {placed.out.map(({ it, s, e, lane }) => {
-              const top = ((s - START_H * 60) / 60) * HOUR;
-              const height = Math.max(((e - s) / 60) * HOUR - 3, 24);
-              const w = 100 / placed.lanes;
-              const isTask = it.kind === "task";
-              const title = isTask ? it.task.title : it.event.title;
-              const done = isTask && it.task.status === "done";
-              return (
-                <button
-                  key={isTask ? `t-${it.task.id}` : `e-${it.event.id}`}
-                  onClick={() => (isTask ? onOpenTask(it.task.id) : onOpenEvent(it.event))}
-                  className={cn(
-                    "absolute z-10 overflow-hidden rounded-lg px-2 py-1 text-left shadow-sm transition-shadow hover:shadow-float",
-                    done && "opacity-60"
-                  )}
-                  style={{
-                    top,
-                    height,
-                    left: `calc(${lane * w}% + 2px)`,
-                    width: `calc(${w}% - 4px)`,
-                    background: it.color,
-                    color: readableText(it.color),
-                  }}
-                >
-                  <div className={cn("truncate text-[12px] font-semibold leading-tight", done && "line-through")}>
-                    {title}
-                  </div>
-                  {height > 30 && (
-                    <div className="truncate text-[10px] tabular-nums opacity-90">
-                      {it.start}
-                      {it.end ? `–${it.end}` : ""}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-
-            {timed.length === 0 && (
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center">
-                <p className="text-[13px] text-ink-tertiary">
-                  {isToday ? "Sin bloques hoy." : "Sin bloques este día."}{" "}
-                  <span className="text-ink-secondary">Agendá una tarea o creá un evento.</span>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+      style={{ background: tint(card.color, 0.13), borderColor: tint(card.color, 0.28) }}
+    >
+      <div className="flex items-center justify-between">
+        <span
+          className="flex h-6 w-6 items-center justify-center rounded-lg text-[13px] leading-none"
+          style={{ background: tint(card.color, 0.3) }}
+        >
+          {card.emoji}
+        </span>
+        {card.kind === "task" && <PriorityDot value={card.task?.priority ?? "none"} />}
       </div>
-    </div>
+      <div className={cn("mt-1.5 line-clamp-2 text-[13px] font-semibold leading-snug text-ink", card.done && "line-through")}>
+        {card.title}
+      </div>
+      {card.subtitle && <div className="truncate text-2xs text-ink-secondary">{card.subtitle}</div>}
+      <div className="mt-1.5 flex items-center justify-between gap-1">
+        <span className="truncate text-2xs font-medium tnum text-ink-tertiary">{card.timeLabel}</span>
+        {assignee && <Avatar profile={assignee} size={18} />}
+      </div>
+    </button>
   );
 }
 
-/* ---------------- filas de la lista ---------------- */
-
-function TimeCol({ start, end, allDay }: { start: string; end: string | null; allDay?: boolean }) {
-  return (
-    <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right tnum">
-      {allDay ? (
-        <div className="text-2xs font-medium text-ink-tertiary">todo el día</div>
-      ) : (
-        <>
-          <div className="text-[13px] font-semibold text-ink">{start}</div>
-          {end && <div className="text-2xs text-ink-tertiary">{end}</div>}
-        </>
-      )}
-    </div>
-  );
-}
-
-function TaskRow({ item }: { item: Extract<Item, { kind: "task" }> }) {
+/* ---------------- filas de la vista Día ---------------- */
+function TaskRow({ task, start, color }: { task: TaskWithTags; start: string; color: string }) {
   const openPeek = useUI((s) => s.openPeek);
   const toggle = useToggleTask();
   const { sounds, celebrate } = usePrefs();
-  const t = item.task;
-  const done = t.status === "done";
-  const dur = durationLabel(item.start, item.end);
+  const done = task.status === "done";
+  const dur = durationLabel(task.start_time, task.end_time);
+  const timeStart = task.start_time ? hm(task.start_time) : "";
+  const timeEnd = task.end_time ? hm(task.end_time) : null;
   return (
     <button
-      onClick={() => openPeek({ kind: "task", id: t.id })}
+      onClick={() => openPeek({ kind: "task", id: task.id })}
       className="group flex w-full items-stretch gap-1 overflow-hidden rounded-xl border border-hairline bg-canvas text-left shadow-card transition-shadow hover:shadow-subtle"
     >
-      <TimeCol start={item.start} end={item.end} />
-      <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: item.color }} />
+      <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right tnum">
+        <div className="text-[13px] font-semibold text-ink">{timeStart || (task.due_time ? hm(task.due_time) : "")}</div>
+        {timeEnd && <div className="text-2xs text-ink-tertiary">{timeEnd}</div>}
+      </div>
+      <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: color }} />
       <div className="min-w-0 flex-1 py-2.5 pl-1.5 pr-3">
         <div className="flex items-center gap-2">
           <StatusCheckbox
             checked={done}
             size={16}
             onToggle={() => {
-              toggle.mutate({ task: t, done: !done });
+              toggle.mutate({ task, done: !done });
               if (!done) {
                 if (celebrate) fireConfetti();
                 if (sounds) playChime();
               }
             }}
           />
-          <span className={cn("truncate text-[14px] font-medium text-ink", done && "text-ink-tertiary line-through")}>
-            {t.title}
-          </span>
+          <span className={cn("truncate text-[14px] font-medium text-ink", done && "text-ink-tertiary line-through")}>{task.title}</span>
         </div>
         <div className="mt-0.5 flex items-center gap-2 pl-[26px] text-2xs text-ink-tertiary">
           {dur && <span className="tnum">{dur}</span>}
-          {t.project && <span className="truncate">{t.project.emoji} {t.project.name}</span>}
+          {task.project && <span className="truncate">{task.project.emoji} {task.project.name}</span>}
         </div>
       </div>
     </button>
   );
 }
 
-function EventRow({ item, onOpen }: { item: Extract<Item, { kind: "event" }>; onOpen: () => void }) {
-  const e = item.event;
+function EventRow({ event, timeLabel, color, onOpen }: { event: CalEvent; timeLabel: string; color: string; onOpen: () => void }) {
   return (
     <button
       onClick={onOpen}
       className="group flex w-full items-stretch gap-1 overflow-hidden rounded-xl border border-hairline bg-canvas text-left shadow-card transition-shadow hover:shadow-subtle"
     >
-      <TimeCol start={item.start} end={item.end} allDay={item.allDay} />
-      <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: item.color }} />
+      <div className="w-[52px] shrink-0 py-2.5 pl-3 text-right text-2xs font-medium tnum text-ink-tertiary">
+        {timeLabel.split("–")[0] || "·"}
+      </div>
+      <div className="my-2.5 w-1 shrink-0 rounded-full" style={{ background: color }} />
       <div className="min-w-0 flex-1 py-2.5 pl-1.5 pr-3">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: item.color }} />
-          <span className="truncate text-[14px] font-medium text-ink">{e.title}</span>
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+          <span className="truncate text-[14px] font-medium text-ink">{event.title}</span>
         </div>
-        {e.description && <div className="mt-0.5 truncate pl-[18px] text-2xs text-ink-tertiary">{e.description}</div>}
+        {event.description && <div className="mt-0.5 truncate pl-[18px] text-2xs text-ink-tertiary">{event.description}</div>}
       </div>
     </button>
   );
