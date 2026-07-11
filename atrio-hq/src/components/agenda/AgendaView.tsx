@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, List, LayoutGrid, Plus, CalendarClock } from "lucide-react";
 import { useUpdateTask, useToggleTask, type TaskWithTags } from "@/hooks/tasks";
 import { useProfileMap } from "@/hooks/profiles";
+import { useIdentity } from "@/stores/identity";
 import { useUI, usePrefs } from "@/stores/ui";
 import { Segmented } from "@/components/ui/Segmented";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -18,24 +19,20 @@ import { hm, timeOfDay, cn } from "@/lib/utils";
 import type { CalEvent } from "@/lib/types/database";
 
 export function AgendaView() {
+  const me = useIdentity((s) => s.profileId);
   const profileMap = useProfileMap();
-  const cardsByDay = useAgendaCards();
+  // La Agenda es personal: solo MIS tareas (los eventos son de los dos).
+  const cardsByDay = useAgendaCards(undefined, me);
   const openPeek = useUI((s) => s.openPeek);
   const agendaFocus = useUI((s) => s.agendaFocus);
   const setAgendaFocus = useUI((s) => s.setAgendaFocus);
 
-  const [view, setView] = useState<"week" | "day">("week");
+  // Arranca en el plan del día; la semana queda a un toque.
+  const [view, setView] = useState<"week" | "day">("day");
   const [date, setDate] = useState<Date>(() => new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CalEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
-
-  // En teléfonos, la vista de día es más legible que la grilla semanal.
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
-      setView("day");
-    }
-  }, []);
 
   // Salto desde el Calendario: abrir un día puntual en vista Día.
   useEffect(() => {

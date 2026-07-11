@@ -8,6 +8,7 @@ import {
   ListChecks,
   CalendarDays,
   CalendarClock,
+  Users,
   Search,
   Plus,
   ChevronDown,
@@ -98,7 +99,14 @@ function SidebarInner() {
             href="/agenda"
             icon={<CalendarClock size={16} />}
             label="Agenda"
-            active={isActive("/agenda")}
+            active={pathname === "/agenda"}
+            onClick={close}
+          />
+          <NavItem
+            href="/agenda-equipo"
+            icon={<Users size={16} />}
+            label="Agenda Equipo"
+            active={isActive("/agenda-equipo")}
             onClick={close}
           />
           <NavItem
