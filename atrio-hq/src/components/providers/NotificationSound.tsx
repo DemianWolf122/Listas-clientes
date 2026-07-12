@@ -17,6 +17,8 @@ import { onPushEcho } from "@/lib/push";
  */
 export function NotificationSound() {
   const me = useIdentity((s) => s.profileId);
+  const meRef = useRef(me);
+  meRef.current = me;
   const router = useRouter();
   const lastFire = useRef(0);
 
@@ -46,8 +48,13 @@ export function NotificationSound() {
   }, []);
 
   // Echo del service worker: se dispara apenas llega el push al dispositivo.
+  // Solo suena para el perfil activo: si el push trae destinatario y no soy yo
+  // (p. ej. pantalla compartida con dos perfiles), no suena.
   useEffect(() => {
-    return onPushEcho((info) => fire(info.title, info.body, info.url));
+    return onPushEcho((info) => {
+      if (info.recipient && info.recipient !== meRef.current) return;
+      fire(info.title, info.body, info.url);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -65,9 +72,11 @@ export function NotificationSound() {
           const url =
             n?.target_type === "channel"
               ? `/chat/${n.target_id}`
-              : n?.target_type === "task"
-                ? "/mis-tareas"
-                : undefined;
+              : n?.target_type === "event"
+                ? "/agenda"
+                : n?.target_type === "task"
+                  ? "/mis-tareas"
+                  : undefined;
           fire(n?.title, n?.body, url);
         }
       )

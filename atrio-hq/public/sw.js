@@ -1,6 +1,6 @@
-// Atrio service worker — v6 (push + sonido + badge + echo a la app).
+// Atrio service worker — v7 (push + sonido + badge + echo con destinatario).
 // Cambiá el número al tocar este archivo para forzar la actualización.
-const SW_VERSION = "v6";
+const SW_VERSION = "v7";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
@@ -44,7 +44,7 @@ self.addEventListener("push", (event) => {
       try {
         const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
         for (const c of clients) {
-          c.postMessage({ type: "atrio-push", at: Date.now(), title, body: options.body, url: options.data.url });
+          c.postMessage({ type: "atrio-push", at: Date.now(), title, body: options.body, url: options.data.url, recipient: data.recipient });
         }
       } catch (_) {
         /* noop */
