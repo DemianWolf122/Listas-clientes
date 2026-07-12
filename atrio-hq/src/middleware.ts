@@ -24,7 +24,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // /api queda fuera del gate: los feeds iCal (Apple/Google) y el conector MCP
+  // de claude.ai los consumen servicios externos que no pueden pasar por la
+  // pantalla de passcode. Cada endpoint lleva su propia protección (secreto).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
