@@ -78,7 +78,7 @@ export function useAgendaCards(projectId?: string, assigneeId?: string | null): 
           push(t.start_date!, {
             key: `ts-${t.id}`,
             kind: "task",
-            color: t.project?.color ?? "#2383E2",
+            color: t.tags?.[0]?.color ?? t.project?.color ?? "#A8A29E",
             emoji: t.project?.emoji ?? "🗒️",
             title: t.title,
             subtitle: t.project?.name,
@@ -94,7 +94,7 @@ export function useAgendaCards(projectId?: string, assigneeId?: string | null): 
           push(t.due_date, {
             key: `td-${t.id}`,
             kind: "task",
-            color: t.project?.color ?? "#9B9B98",
+            color: t.tags?.[0]?.color ?? t.project?.color ?? "#9B9B98",
             emoji: t.project?.emoji ?? "🗒️",
             title: t.title,
             subtitle: t.project?.name ?? "Sin proyecto",
@@ -158,15 +158,16 @@ export function AgendaCard({
         card.done && "opacity-60"
       )}
       style={{
-        background: tint(card.color, 0.13),
-        borderColor: tint(card.color, 0.28),
-        borderLeft: `3px solid ${card.color}`,
+        // difuminado del color de la etiqueta desde el borde izquierdo hacia
+        // adentro, sobre el fondo del tema (sin bloque de color plano ni azul).
+        background: `linear-gradient(100deg, ${tint(card.color, 0.6)} 0%, ${tint(card.color, 0.18)} 42%, transparent 86%), rgb(var(--canvas))`,
+        borderColor: tint(card.color, 0.3),
       }}
     >
       <div className="flex items-center justify-between">
         <span
           className="flex h-6 w-6 items-center justify-center rounded-lg text-[13px] leading-none"
-          style={{ background: tint(card.color, 0.3) }}
+          style={{ background: tint(card.color, 0.45) }}
         >
           {card.emoji}
         </span>

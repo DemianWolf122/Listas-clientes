@@ -245,7 +245,7 @@ function MonthChip({ card, onOpen }: { card: Card; onOpen: (e: React.MouseEvent)
     <button
       onClick={onOpen}
       className={cn("flex w-full min-w-0 items-center gap-1 rounded-md px-1.5 py-[3px] text-left", card.done && "opacity-60")}
-      style={{ background: tint(card.color, 0.15), borderLeft: `2px solid ${card.color}` }}
+      style={{ background: `linear-gradient(100deg, ${tint(card.color, 0.5)} 0%, ${tint(card.color, 0.12)} 75%, transparent 100%)` }}
     >
       <span className={cn("min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-ink", card.done && "line-through")}>
         {card.title}
