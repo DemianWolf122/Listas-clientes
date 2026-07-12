@@ -39,11 +39,20 @@ function chk<T>(r: { data: T; error: { message: string } | null }): T {
   return r.data;
 }
 
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+const SIN_ASIGNAR = new Set(["nadie", "sin asignar", "ninguno", "ninguna", "nobody", "unassigned", "equipo"]);
+
+/** Match tolerante: "lucila", "para Lucila", "Lucíla" → Lucila (en cualquier dirección). */
 async function perfil(db: DB, nombre?: string | null) {
   if (!nombre) return null;
-  const data = chk(await db.from("profiles").select("id,name").ilike("name", `%${nombre.trim()}%`).limit(1));
-  if (!data?.length) throw new Error(`No encontré a "${nombre}" (probá "Lucila" o "Demian").`);
-  return data[0];
+  const data = chk(await db.from("profiles").select("id,name"));
+  const n = norm(String(nombre));
+  const hit = (data ?? []).find((p) => {
+    const pn = norm(p.name);
+    return n === pn || n.includes(pn) || pn.includes(n);
+  });
+  if (!hit) throw new Error(`No encontré a "${nombre}" (probá "Lucila" o "Demian").`);
+  return hit;
 }
 
 async function nombresPorId(db: DB): Promise<Record<string, string>> {
@@ -192,13 +201,14 @@ const TOOLS = [
     proyecto: S("Nombre del proyecto"), limite: { type: "number", description: "Máx. resultados (default 15)" },
   }),
   T("ver_tarea", "Detalle completo de una tarea: descripción, etiquetas, subtareas y comentarios.", { id: S("id de la tarea") }, ["id"]),
-  T("crear_tarea", "Crea una tarea (horario opcional para la agenda). Notifica al asignado si no es quien la pide.", {
-    titulo: S("Título (podés arrancar con un emoji)"), persona: S("Asignada a: Lucila o Demian"),
+  T("crear_tarea", "Crea una tarea (horario opcional para la agenda). Si no pasás 'persona', queda asignada a quien la pide ('de'). Notifica al asignado si no es quien la pide.", {
+    titulo: S("Título (podés arrancar con un emoji)"),
+    persona: S("A QUIÉN queda asignada: Lucila o Demian. Si el usuario dice 'para mí'/'mi tarea', usá el nombre de quien habla. 'nadie' = dejarla sin asignar."),
     fecha: S("Día del bloque (YYYY-MM-DD)"), hora_inicio: S("HH:MM"), hora_fin: S("HH:MM"),
     fecha_entrega: S("Fecha límite (YYYY-MM-DD)"), hora_entrega: S("HH:MM"), descripcion: S("Detalle"),
     prioridad: S("baja | media | alta | urgente"), etiquetas: { type: "array", items: { type: "string" }, description: "Etiquetas por nombre" },
     proyecto: S("Proyecto por nombre"), subtarea_de: S("id de la tarea madre (para crear una subtarea)"),
-    de: S("Quién la pide (Lucila o Demian)"),
+    de: S("Quién la está pidiendo (Lucila o Demian) — no es el asignado, para eso usá 'persona'"),
   }, ["titulo"]),
   T("actualizar_tarea", "Cambia una tarea por id: estado, horarios, asignado, título, proyecto, prioridad… Avisa al nuevo asignado si se reasigna.", {
     id: S("id"), estado: S("pendiente | en progreso | hecha"), titulo: S("Nuevo título"), descripcion: S("Nueva descripción"),
@@ -366,8 +376,15 @@ async function ejecutar(name: string, args: any): Promise<string> {
 
     case "crear_tarea": {
       if (!args?.titulo) throw new Error("Falta el título.");
-      const asignada = args.persona ? await perfil(db, args.persona) : null;
       const pide = args.de ? await perfil(db, args.de) : null;
+      // Sin persona explícita, la tarea es de quien la pide (lo más común al
+      // dictarle a Claude). "nadie"/"sin asignar" la deja libre a propósito.
+      const asignada =
+        args.persona && SIN_ASIGNAR.has(norm(String(args.persona)))
+          ? null
+          : args.persona
+            ? await perfil(db, args.persona)
+            : pide;
       const proy = args.proyecto ? await proyecto(db, args.proyecto) : null;
       const fila: any = {
         title: args.titulo,
@@ -401,7 +418,7 @@ async function ejecutar(name: string, args: any): Promise<string> {
           target_type: "task", target_id: data.id,
         });
       }
-      return `Tarea creada ✓ "${data.title}" (id:${data.id})${asignada ? ` · asignada a ${asignada.name}` : ""}${proy ? ` · proyecto ${proy.name}` : ""}${puestas.length ? ` · etiquetas: ${puestas.join(", ")}` : ""}`;
+      return `Tarea creada ✓ "${data.title}" (id:${data.id})${asignada ? ` · asignada a ${asignada.name}` : " · ⚠️ SIN ASIGNAR — si era para alguien, corregilo con actualizar_tarea pasando persona: \"Lucila\" o \"Demian\""}${proy ? ` · proyecto ${proy.name}` : ""}${puestas.length ? ` · etiquetas: ${puestas.join(", ")}` : ""}`;
     }
 
     case "actualizar_tarea": {
@@ -724,7 +741,8 @@ async function atender(msg: any): Promise<object | null> {
           "Opera toda la app: agenda y resumen semanal, tareas (crear, actualizar, eliminar, subtareas, comentarios, etiquetas), " +
           "proyectos, eventos del calendario, documentos (crear/leer/agregar), chat interno y avisos push directos a cada persona. " +
           "Fechas en YYYY-MM-DD y horas HH:MM, siempre en hora de Buenos Aires (UTC-3). " +
-          "Antes de eliminar algo, confirmá con el usuario. Cuando el usuario diga 'yo' o 'me', preguntale (o deducí) si es Lucila o Demian y usalo en el campo 'de'.",
+          "Antes de eliminar algo, confirmá con el usuario. Cuando el usuario diga 'yo' o 'me', preguntale (o deducí) si es Lucila o Demian y usalo en el campo 'de'. " +
+          "OJO con las tareas: 'persona' = a quién queda ASIGNADA (si dicen 'una tarea para Lucila', persona='Lucila'); 'de' = quién la pide. Si no pasás persona, se asigna a quien la pide.",
       });
     }
     case "ping":
