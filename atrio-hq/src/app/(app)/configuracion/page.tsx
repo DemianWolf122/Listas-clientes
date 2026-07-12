@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink, Bell, BellOff } from "lucide-react";
+import { Sun, Moon, Monitor, Volume2, PartyPopper, LogOut, Smartphone, Check, Palette, CalendarPlus, Copy, ExternalLink, Bell, BellOff, Bot } from "lucide-react";
+import { MCP_SECRET_FALLBACK } from "@/lib/mcp-config";
 import {
   getPushState,
   enablePush,
@@ -68,6 +69,15 @@ export default function SettingsPage() {
           hint="Suscribí tu agenda de Atrio en Google Calendar, Apple Calendar o el calendario de tu teléfono. Es de solo lectura y se actualiza sola cada ~1 h."
         >
           <CalendarSync meId={me?.id} />
+        </Section>
+
+        {/* Conector de Claude */}
+        <Section
+          icon={<Bot size={16} />}
+          title="Asistente Claude (conector)"
+          hint="Conectá Atrio a tu Claude: desde claude.ai (web, celu o desktop) le pedís cosas y las hace acá adentro — crear tareas y eventos, escribir docs, mandar mensajes, leer la agenda."
+        >
+          <ClaudeConnector />
         </Section>
 
         {/* Apariencia */}
@@ -335,6 +345,49 @@ function NotifButton({ meId }: { meId?: string }) {
     >
       <Bell size={16} /> Activar notificaciones
     </Button>
+  );
+}
+
+function ClaudeConnector() {
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
+  useEffect(() => setOrigin(window.location.origin), []);
+  if (!origin) return null;
+  const url = `${origin}/api/mcp/${MCP_SECRET_FALLBACK}`;
+
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-1.5">
+        <code className="min-w-0 flex-1 truncate rounded-md bg-surface px-2 py-1.5 text-2xs text-ink-secondary">{url}</code>
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-hairline px-2 py-1.5 text-2xs font-medium text-ink transition hover:bg-surface-hover"
+        >
+          {copied ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
+          {copied ? "¡Copiado!" : "Copiar"}
+        </button>
+      </div>
+      <div className="rounded-xl bg-surface/60 p-3 text-2xs leading-relaxed text-ink-secondary">
+        <p className="mb-1 font-semibold text-ink">Cómo conectarlo (una vez, cada uno con su cuenta)</p>
+        <p>
+          1. Tocá <b>Copiar</b>. &nbsp;2. Andá a{" "}
+          <a href="https://claude.ai/settings/connectors" target="_blank" rel="noreferrer" className="font-medium text-accent underline">
+            claude.ai → Ajustes → Conectores
+          </a>{" "}
+          → <b>Agregar conector personalizado</b> → pegá la URL. &nbsp;3. Listo: en cualquier chat de Claude activá el
+          conector <b>Atrio HQ</b> y pedile, por ejemplo: <i>“creame una tarea para mañana a las 10 con etiqueta Cliente”</i>{" "}
+          o <i>“armá el doc del brief y guardalo en Atrio”</i>.
+        </p>
+        <p className="mt-1 text-ink-tertiary">
+          Funciona también en la app de Claude del celu y de la compu (los conectores se sincronizan con tu cuenta). No
+          compartas la URL: lleva la llave de acceso.
+        </p>
+      </div>
+    </div>
   );
 }
 
