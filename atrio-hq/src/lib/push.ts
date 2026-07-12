@@ -98,12 +98,12 @@ export async function sendServerTest(profileId: string): Promise<boolean> {
 
 /** Escucha el "echo" que manda el service worker cuando llega un push. */
 export function onPushEcho(
-  cb: (info: { at: number; title?: string; body?: string; url?: string }) => void
+  cb: (info: { at: number; title?: string; body?: string; url?: string; recipient?: string }) => void
 ): () => void {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return () => {};
   const handler = (e: MessageEvent) => {
     if (e.data && e.data.type === "atrio-push") {
-      cb({ at: e.data.at, title: e.data.title, body: e.data.body, url: e.data.url });
+      cb({ at: e.data.at, title: e.data.title, body: e.data.body, url: e.data.url, recipient: e.data.recipient });
     }
   };
   navigator.serviceWorker.addEventListener("message", handler);
