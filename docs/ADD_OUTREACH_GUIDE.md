@@ -7,11 +7,17 @@ La guía "Reglas Outreach Atrio" está lista para agregarse a la sección de Doc
 Desde la raíz del proyecto, en una terminal con el dev server corriendo:
 
 ```bash
+# Opción A: Enviar la variable de ambiente
+export MCP_SECRET="b3d3a628f304e056ce184cd52c7c19d52db3b9b3"
+./scripts/add-outreach-guide.sh
+
+# Opción B: El script intenta leer de .env.local si existe
 ./scripts/add-outreach-guide.sh
 ```
 
 El script:
 - Lee el archivo `docs/REGLAS_OUTREACH_ATRIO.md`
+- Obtiene MCP_SECRET del environment o de `.env.local`
 - Llama al MCP connector en `http://localhost:3000/api/mcp/{secret}`
 - Crea el documento en Docs con el título "Reglas Outreach Atrio" y emoji 📋
 

@@ -1,11 +1,22 @@
 #!/bin/bash
 # Script to add "Reglas Outreach Atrio" document to Atrio HQ via MCP connector
 # Usage: ./add-outreach-guide.sh
+# Note: Requires MCP_SECRET environment variable or reads from .env
 
 set -e
 
 # Configuration
-MCP_SECRET="b3d3a628f304e056ce184cd52c7c19d52db3b9b3"
+MCP_SECRET="${MCP_SECRET:-}"
+if [ -z "$MCP_SECRET" ] && [ -f ".env.local" ]; then
+  MCP_SECRET=$(grep "^MCP_SECRET=" .env.local | cut -d= -f2 | tr -d ' "'"'"'')
+fi
+
+if [ -z "$MCP_SECRET" ]; then
+  echo "❌ Error: MCP_SECRET environment variable not set"
+  echo "Set it with: export MCP_SECRET='your-secret-here'"
+  exit 1
+fi
+
 MCP_URL="http://localhost:3000/api/mcp/$MCP_SECRET"
 TITLE="Reglas Outreach Atrio"
 ICON="📋"
