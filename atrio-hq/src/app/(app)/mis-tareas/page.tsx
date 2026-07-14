@@ -43,6 +43,14 @@ export default function MyTasksPage() {
     ].filter((g) => g.items.length > 0);
   }, [active]);
 
+  const completedGroups = useMemo(() => {
+    return [
+      { key: "done-today", label: "Completadas hoy", emoji: "✅", items: done.filter((t) => isDueToday(t.due_date) || (t.updated_at && new Date(t.updated_at).toDateString() === new Date().toDateString())) },
+      { key: "done-upcoming", label: "Completadas próximas", emoji: "📋", items: done.filter((t) => t.due_date && !isDueToday(t.due_date)) },
+      { key: "done-nodate", label: "Completadas sin fecha", emoji: "✓", items: done.filter((t) => !t.due_date) },
+    ].filter((g) => g.items.length > 0);
+  }, [done]);
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex flex-wrap items-center gap-3 border-b border-hairline px-4 py-3 sm:px-6">
@@ -87,31 +95,60 @@ export default function MyTasksPage() {
           <StatusBoard tasks={tasks ?? []} />
         ) : (
           <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-4 sm:px-6">
-            {groups.map((g) => (
-              <div key={g.key} className="mb-6">
-                <div className="mb-1 flex items-center gap-2 px-2">
-                  <span>{g.emoji}</span>
-                  <span className={cn("text-[13px] font-semibold", g.key === "overdue" ? "text-priority-urgent" : "text-ink")}>
-                    {g.label}
-                  </span>
-                  <span className="text-2xs text-ink-tertiary">{g.items.length}</span>
+            {/* Tareas Pendientes */}
+            {groups.length > 0 && (
+              <div className="mb-8">
+                <div className="mb-4 flex items-center gap-2 px-2">
+                  <span className="text-base">📌</span>
+                  <span className="text-[13px] font-bold text-ink">PENDIENTES</span>
+                  <span className="text-2xs text-ink-tertiary">({active.length})</span>
                 </div>
-                {g.items.map((t) => (
-                  <MyTaskRow key={t.id} task={t} />
+                {groups.map((g) => (
+                  <div key={g.key} className="mb-6">
+                    <div className="mb-1 flex items-center gap-2 px-2">
+                      <span>{g.emoji}</span>
+                      <span className={cn("text-[13px] font-semibold", g.key === "overdue" ? "text-priority-urgent" : "text-ink")}>
+                        {g.label}
+                      </span>
+                      <span className="text-2xs text-ink-tertiary">{g.items.length}</span>
+                    </div>
+                    {g.items.map((t) => (
+                      <MyTaskRow key={t.id} task={t} />
+                    ))}
+                  </div>
                 ))}
               </div>
-            ))}
+            )}
+
+            {/* Tareas Completadas */}
             {done.length > 0 && (
-              <details className="mb-6">
-                <summary className="cursor-pointer px-2 text-[13px] font-semibold text-ink-secondary">
-                  Completadas · {done.length}
-                </summary>
-                <div className="mt-1">
-                  {done.map((t) => (
-                    <MyTaskRow key={t.id} task={t} />
-                  ))}
+              <div className="mt-8">
+                <div className="mb-4 flex items-center gap-2 px-2">
+                  <span className="text-base">✨</span>
+                  <span className="text-[13px] font-bold text-ink">COMPLETADAS</span>
+                  <span className="text-2xs text-ink-tertiary">({done.length})</span>
                 </div>
-              </details>
+                {completedGroups.length > 0 ? (
+                  completedGroups.map((g) => (
+                    <details key={g.key} className="mb-4">
+                      <summary className="cursor-pointer px-2 py-1 text-[13px] font-semibold text-ink-secondary hover:text-ink transition-colors">
+                        <span className="inline-block mr-2">{g.emoji}</span>
+                        {g.label}
+                        <span className="ml-2 text-2xs text-ink-tertiary">({g.items.length})</span>
+                      </summary>
+                      <div className="mt-2 ml-2">
+                        {g.items.map((t) => (
+                          <MyTaskRow key={t.id} task={t} />
+                        ))}
+                      </div>
+                    </details>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-ink-tertiary text-[13px]">
+                    No hay tareas completadas
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
