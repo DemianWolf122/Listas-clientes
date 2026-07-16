@@ -44,6 +44,14 @@ Sitio estático. **Root Directory = `mapa-atrio`.**
 - `manifest.webmanifest`, `icon.svg`, `sw.js` — PWA / offline.
 - `vercel.json` — headers de caché (evita servir un SW viejo).
 
+## Copiloto de recorrido
+- **Score de oportunidad** por comercio (severidad del estado web × alcance por reseñas × prioridad) con chip y filtro **🔥 Oportunidad**.
+- **Optimizador de ruta** (vecino más cercano desde tu ubicación): dibuja el recorrido óptimo y estima **distancia + tiempo caminando**.
+- **Dictado por voz** para las notas (Web Speech API, es-AR).
+- **Links de inteligencia** por ficha: Google, Instagram, Reseñas.
+- **Guardar la zona del mapa offline** (pre-cachea tiles) y **confetti** al concretar un contacto.
+- **"Cómo llegar" por dirección exacta** + **"Mover pin"** para corregir la ubicación de una parada.
+
 ## Esquema Supabase (schema `atrio_rutas`)
 - `rutas(id, nombre, descripcion, ciudad, color, orden, archivada, …)`
 - `paradas(id, ruta_id→rutas, numero, nombre, rubro, direccion, lat, lng, telefono, email, place_id,
