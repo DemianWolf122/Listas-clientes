@@ -62,10 +62,18 @@
     font-family:'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background:var(--cream);
     color:var(--ink);
-    display:flex; flex-direction:column;
     height:100dvh; height:100vh;
     overflow:hidden;
+    display:grid;
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
+    grid-template-areas:"header" "search" "progress" "chips" "stage" "next";
   }
+  header{ grid-area:header; }
+  .search-wrap{ grid-area:search; }
+  .progress-wrap{ grid-area:progress; }
+  .chips{ grid-area:chips; }
+  .next-bar{ grid-area:next; }
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
   }
@@ -124,12 +132,12 @@
   .chip .cn{ opacity:.6; font-weight:600; margin-left:3px; }
 
   /* ---------- Main area (map or list) ---------- */
-  main{ position:relative; flex:1 1 auto; min-height:0; }
+  main{ position:relative; min-height:0; grid-area:stage; z-index:0; }
   #map{ position:absolute; inset:0; background:var(--cream-2); }
   .leaflet-control-attribution{ font-size:9px !important; }
   .leaflet-bar a{ background:var(--paper) !important; color:var(--ink) !important; border-color:var(--line) !important; }
 
-  #listView{ position:absolute; inset:0; overflow-y:auto; background:var(--cream); padding:6px 14px 100px; display:none; }
+  #listView{ grid-area:stage; position:relative; z-index:1; min-height:0; overflow-y:auto; background:var(--cream); padding:6px 14px 16px; display:none; }
   .tramo-heading{ font-size:12.5px; font-weight:600; color:var(--sage-deep); text-transform:uppercase; letter-spacing:0.5px; margin:16px 2px 8px; display:flex; justify-content:space-between; }
   .tramo-heading .th-count{ color:var(--ink-faint); font-weight:500; }
   .list-row{
@@ -287,6 +295,38 @@
   .toast button{ background:transparent; border:none; color:var(--sage); font-weight:700; font-size:13px; cursor:pointer; padding:0; }
 
   .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+  /* ---------- Responsive: panel + mapa en pantallas anchas ---------- */
+  @media (min-width:820px){
+    body{
+      grid-template-columns:390px 1fr;
+      grid-template-areas:
+        "header   map"
+        "search   map"
+        "progress map"
+        "chips    map"
+        "list     map"
+        "next     map";
+    }
+    main{ grid-area:map; border-left:1px solid var(--line); }
+    #listView{ grid-area:list; display:block !important; border-top:1px solid var(--line); padding-bottom:20px; }
+    .next-bar{ border-top:1px solid var(--line); }
+    #viewToggle{ display:none !important; }
+    .chips{ flex-wrap:wrap; overflow:visible; }
+    /* Fichas como modal centrado */
+    .sheet{
+      left:50%; right:auto; top:50%; bottom:auto;
+      width:min(460px, 92vw); max-height:84vh; border-radius:22px;
+      transform:translate(-50%, -46%); opacity:0; visibility:hidden;
+      transition:opacity .2s ease, transform .24s cubic-bezier(.2,.8,.3,1), visibility .2s;
+    }
+    .sheet.show{ transform:translate(-50%,-50%); opacity:1; visibility:visible; }
+    .sheet-handle{ display:none; }
+    .toast{ bottom:24px; }
+  }
+  @media (min-width:1200px){
+    body{ grid-template-columns:420px 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -337,7 +377,6 @@
 
 <main>
   <div id="map"></div>
-  <div id="listView"></div>
   <div class="geo-banner" id="geoBanner">
     <span>Activá tu ubicación para ver distancias y guiarte.</span>
     <button id="geoBtn">Activar</button>
@@ -350,6 +389,8 @@
   <div class="map-fab" id="fitBtn" title="Ver toda la ruta">⤢</div>
   <div class="map-fab" id="locateBtn" title="Mi ubicación">◎</div>
 </main>
+
+<div id="listView"></div>
 
 <div class="next-bar" id="nextBar">
   <div class="nb-badge" id="nbBadge">–</div>
@@ -1165,8 +1206,18 @@ function toggleTheme(){
 /* ============================================================
    VIEW / SORT / CLOCK / TOAST
    ============================================================ */
+function isWide(){ return window.matchMedia('(min-width:820px)').matches; }
 function setView(v){
   state.view = v;
+  if(isWide()){
+    // En pantallas anchas el mapa y la lista conviven; el toggle no aplica.
+    document.getElementById('map').style.display = '';
+    document.getElementById('listView').style.display = '';
+    ['fitBtn','locateBtn','addBtn'].forEach(function(id){ document.getElementById(id).style.display = 'flex'; });
+    renderList();
+    setTimeout(function(){ if(map) map.invalidateSize(); }, 50);
+    return;
+  }
   document.getElementById('map').style.display = v==='map' ? '' : 'none';
   document.getElementById('listView').style.display = v==='list' ? 'block' : 'none';
   ['fitBtn','locateBtn','addBtn'].forEach(function(id){ document.getElementById(id).style.display = v==='map' ? 'flex' : 'none'; });
@@ -1175,6 +1226,7 @@ function setView(v){
   if(v==='list') renderList();
   if(v==='map') setTimeout(function(){ map.invalidateSize(); }, 50);
 }
+function applyResponsive(){ setView(state.view); }
 function tickClock(){
   var d = new Date();
   document.getElementById('clockNow').textContent = pad2(d.getHours())+':'+pad2(d.getMinutes());
@@ -1246,6 +1298,10 @@ function init(){
     if(m){ var id=+m[1]; if(stopById(id)){ openSheet(id); if(state.view==='map') panTo(stopById(id)); } }
   }
   window.addEventListener('hashchange', handleHash);
+
+  applyResponsive();
+  var rzT = null;
+  window.addEventListener('resize', function(){ clearTimeout(rzT); rzT = setTimeout(applyResponsive, 150); });
 
   showGeoBanner(true, 'Activá tu ubicación para ver distancias y guiarte.');
   tryGeolocation(true);
