@@ -302,6 +302,10 @@
   .export-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:18px; }
   .export-row .action-btn{ font-size:12.5px; }
   .danger-link{ display:block; text-align:center; margin-top:16px; color:#C0574A; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .sheet-links{ display:flex; gap:18px; justify-content:center; margin-top:14px; }
+  .mini-link{ font-size:12.5px; font-weight:600; color:var(--sage-deep); cursor:pointer; }
+  .mini-link.danger{ color:#C0574A; }
+  .marker-research{ border-style:dashed !important; }
 
   /* ---------- Toast ---------- */
   .toast{
@@ -587,6 +591,7 @@ var state = {
   activeStopId: null,
   theme: null,
   addMode: false,
+  moveId: null,
   dayStart: null
 };
 var pidByNum = {};      // numero -> parada_id (uuid) de la ruta activa
@@ -649,7 +654,7 @@ function mapRow(row){
     email:row.email||null, lat:row.lat, lng:row.lng, placeId:row.place_id||null,
     rating:(row.rating!=null?Number(row.rating):null), reviews:row.reviews||null,
     web:row.web||'', webKind:row.web_kind||'unknown', hook:row.hook||'', tip:row.tip||'',
-    opensAt:row.opens_at||null, closesAt:row.closes_at||null, custom:(row.fuente==='campo') };
+    opensAt:row.opens_at||null, closesAt:row.closes_at||null, custom:(row.fuente==='campo'), research:(row.fuente==='research') };
 }
 function seedStops(){ return SEED_STOPS.map(function(s){ var o={}; for(var k in s) o[k]=s[k]; o.pid='seed:'+s.id; return o; }); }
 function setStops(list){ STOPS = list; pidByNum = {}; list.forEach(function(s){ pidByNum[s.id] = s.pid; }); }
@@ -800,9 +805,10 @@ function waHref(raw, text){
   return url;
 }
 function directionsUrl(stop){
-  var url = 'https://www.google.com/maps/dir/?api=1&destination=' + stop.lat + ',' + stop.lng + '&travelmode=walking';
-  if(stop.placeId) url += '&destination_place_id=' + stop.placeId;
-  return url;
+  var base = 'https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=';
+  if(stop.placeId) return base + stop.lat + ',' + stop.lng + '&destination_place_id=' + stop.placeId;
+  if(stop.address) return base + encodeURIComponent(stop.address + ', Mar del Plata, Argentina'); // más preciso que el pin
+  return base + stop.lat + ',' + stop.lng;
 }
 function pad2(n){ return n<10 ? '0'+n : ''+n; }
 function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
@@ -860,7 +866,7 @@ function initMap(){
   L.control.zoom({position:'bottomleft'}).addTo(map);
   routeLine = L.polyline([], {color:getCss('--sage-dark'), weight:3, opacity:0.5, dashArray:'1,9', lineCap:'round'}).addTo(map);
   rebuildMarkers();
-  map.on('click', function(e){ if(state.addMode) placeNewStop(e.latlng); });
+  map.on('click', function(e){ if(state.moveId) doMoveStop(e.latlng); else if(state.addMode) placeNewStop(e.latlng); });
   fitAll();
 }
 function refreshTiles(){ if(tileLayer) tileLayer.setUrl(tileUrl()); if(routeLine) routeLine.setStyle({color:getCss('--sage-dark')}); }
@@ -887,7 +893,7 @@ function iconFor(stop){
   var label = (''+stop.id).length > 2 ? '＋' : stop.id;
   return L.divIcon({
     className:'',
-    html:'<div class="marker-badge'+(isNext?' marker-next':'')+'" style="width:'+size+'px;height:'+size+'px;background:'+color+';font-size:'+(size*0.4)+'px;">'+label+'</div>',
+    html:'<div class="marker-badge'+(isNext?' marker-next':'')+(stop.research?' marker-research':'')+'" style="width:'+size+'px;height:'+size+'px;background:'+color+';font-size:'+(size*0.4)+'px;">'+label+'</div>',
     iconSize:[size,size], iconAnchor:[size/2,size/2], popupAnchor:[0,-size/2]
   });
 }
@@ -1130,7 +1136,8 @@ function openSheet(id){
     '</div>'+
     '<div class="note-label">Nota rápida</div>'+
     '<textarea class="note-area" id="noteArea" rows="2" placeholder="Ej: habló con Francisco, volver el jueves…">'+esc(noteOf(id))+'</textarea>'+
-    (stop.custom ? '<span class="danger-link" id="delStop">🗑 Eliminar este comercio</span>' : '');
+    '<div class="sheet-links"><span class="mini-link" id="moveStop">📍 Mover pin</span>'+
+      (stop.custom ? '<span class="mini-link danger" id="delStop">🗑 Eliminar</span>' : '')+'</div>';
 
   document.getElementById('sheetBody').innerHTML = body;
   Array.prototype.forEach.call(document.querySelectorAll('#sheet .status-btn'), function(b){
@@ -1141,6 +1148,8 @@ function openSheet(id){
   bindField('followInput', id, 'followUp');
   var del = document.getElementById('delStop');
   if(del) del.addEventListener('click', function(){ deleteStop(id); });
+  var mv = document.getElementById('moveStop');
+  if(mv) mv.addEventListener('click', function(){ startMoveMode(id); });
 
   showSheet('sheet');
 }
@@ -1305,17 +1314,38 @@ function resetDay(){
    ADD STOP (nuevo comercio en la calle)
    ============================================================ */
 var pendingLatLng = null;
+function hintText(t){ document.getElementById('addHint').querySelector('span').textContent = t; }
 function startAddMode(){
-  state.addMode = true;
+  state.addMode = true; state.moveId = null;
   if(state.view!=='map') setView('map');
+  hintText('📍 Tocá el mapa donde está el nuevo comercio…');
   document.getElementById('addHint').style.display = 'flex';
   document.getElementById('addBtn').classList.add('on');
   closeSheets();
 }
 function stopAddMode(){
-  state.addMode = false;
+  state.addMode = false; state.moveId = null;
   document.getElementById('addHint').style.display = 'none';
   document.getElementById('addBtn').classList.remove('on');
+}
+function startMoveMode(id){
+  var s = stopById(id); state.moveId = id; state.addMode = false;
+  closeSheets();
+  if(state.view!=='map') setView('map');
+  hintText('📍 Tocá la nueva ubicación de ' + (s ? s.name.split(/[—·(]/)[0].trim() : 'la parada') + '…');
+  document.getElementById('addHint').style.display = 'flex';
+  if(s) panTo(s);
+}
+function doMoveStop(latlng){
+  var id = state.moveId, s = stopById(id); state.moveId = null;
+  document.getElementById('addHint').style.display = 'none';
+  if(!s) return;
+  s.lat = latlng.lat; s.lng = latlng.lng; s.research = false; saveStopsCache();
+  if(markers[id]) markers[id].setLatLng([s.lat, s.lng]);
+  if(s.pid && String(s.pid).indexOf('tmp:')!==0 && String(s.pid).indexOf('seed:')!==0 && state.online){
+    sbPatch('paradas','id=eq.'+s.pid, {lat:s.lat, lng:s.lng, fuente:'campo'}).catch(function(){});
+  }
+  refreshMarker(s); renderNextBar(); renderList(); toast('Ubicación actualizada'); panTo(s);
 }
 function placeNewStop(latlng){
   pendingLatLng = latlng;
