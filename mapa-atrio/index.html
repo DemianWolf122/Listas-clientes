@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#F4F1EB" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#1A1A1A" media="(prefers-color-scheme: dark)" />
+<meta name="description" content="Mapa de ruta comercial de atrio — prospección de clientes en el centro de Mar del Plata." />
+<title>atrıo · Ruta comercial MDP</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="vendor/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F4F1EB;
+    --cream-2:#EAE4D6;
+    --paper:#FCFAF6;
+    --ink:#1A1A1A;
+    --ink-soft:#5B5850;
+    --ink-faint:#8C8A82;
+    --sage:#8FA689;
+    --sage-dark:#5C7A56;
+    --sage-deep:#425C3D;
+    --line:#DCD6C6;
+    --st-pending:#B9B3A2;
+    --st-visited:#3E6FA6;
+    --st-contacted:#5C7A56;
+    --st-skipped:#9B8F82;
+    --amber:#C68A3C;
+    --shadow:0 8px 24px rgba(26,26,26,0.14);
+    --shadow-sm:0 2px 8px rgba(26,26,26,0.12);
+    --radius:18px;
+    --tile:light;
+  }
+  :root[data-theme="dark"]{
+    --cream:#16150F;
+    --cream-2:#26241B;
+    --paper:#1F1E16;
+    --ink:#F2EFE6;
+    --ink-soft:#B4AF9F;
+    --ink-faint:#7E7A6C;
+    --sage:#8FA689;
+    --sage-dark:#9DB596;
+    --sage-deep:#B7CBB0;
+    --line:#34322A;
+    --st-pending:#6E6A5C;
+    --st-visited:#5C90CC;
+    --st-contacted:#7FA277;
+    --st-skipped:#8B8172;
+    --amber:#D9A75B;
+    --shadow:0 8px 24px rgba(0,0,0,0.5);
+    --shadow-sm:0 2px 8px rgba(0,0,0,0.4);
+    --tile:dark;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; margin:0; overscroll-behavior:none;}
+  body{
+    font-family:'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    display:flex; flex-direction:column;
+    height:100dvh; height:100vh;
+    overflow:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px 8px;
+    background:var(--cream);
+    z-index:20;
+  }
+  .brand{ display:flex; flex-direction:column; line-height:1; }
+  .brand .word{ font-family:'Instrument Serif', serif; font-style:italic; font-size:21px; letter-spacing:0.2px; color:var(--ink); }
+  .brand .sub{ font-size:10.5px; color:var(--ink-soft); letter-spacing:0.4px; margin-top:2px; text-transform:uppercase; }
+  .head-actions{ display:flex; gap:6px; align-items:center; }
+  .icon-btn{
+    width:36px; height:36px; border-radius:11px; border:1px solid var(--line);
+    background:var(--paper); display:flex; align-items:center; justify-content:center;
+    font-size:16px; cursor:pointer; color:var(--ink); flex:0 0 auto; position:relative;
+    transition:transform .08s ease;
+  }
+  .icon-btn:active{ transform:scale(0.94); }
+  .icon-btn.on{ background:var(--sage-dark); border-color:var(--sage-dark); color:#fff; }
+  .icon-btn .badge-dot{ position:absolute; top:-3px; right:-3px; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:var(--amber); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+  /* ---------- Search ---------- */
+  .search-wrap{ flex:0 0 auto; padding:0 14px 8px; background:var(--cream); }
+  .search-box{ display:flex; align-items:center; gap:8px; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:8px 12px; }
+  .search-box input{ flex:1 1 auto; border:none; background:transparent; font-family:inherit; font-size:14px; color:var(--ink); outline:none; min-width:0; }
+  .search-box input::placeholder{ color:var(--ink-faint); }
+  .search-box .s-ic{ opacity:.6; font-size:14px; }
+  .search-box .s-clear{ color:var(--ink-faint); cursor:pointer; font-size:15px; display:none; }
+
+  /* ---------- Progress bar ---------- */
+  .progress-wrap{ flex:0 0 auto; padding:0 14px 10px; background:var(--cream); }
+  .progress-stats{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .progress-stats .goal{ font-size:12.5px; color:var(--ink-soft); }
+  .progress-stats .goal b{ color:var(--sage-deep); font-weight:600; }
+  .progress-track{ height:7px; border-radius:5px; background:var(--cream-2); overflow:hidden; display:flex; }
+  .progress-seg{ height:100%; transition:width .35s cubic-bezier(.2,.8,.3,1); }
+  .seg-contacted{ background:var(--st-contacted); }
+  .seg-visited{ background:var(--st-visited); }
+  .seg-skipped{ background:var(--st-skipped); }
+
+  /* ---------- Filter chips ---------- */
+  .chips{ flex:0 0 auto; display:flex; gap:7px; padding:2px 14px 10px; overflow-x:auto; background:var(--cream); scrollbar-width:none; }
+  .chips::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:0 0 auto; padding:7px 13px; border-radius:100px; border:1px solid var(--line);
+    background:var(--paper); font-size:12.5px; font-weight:500; color:var(--ink-soft);
+    cursor:pointer; white-space:nowrap; transition:transform .08s ease;
+  }
+  .chip:active{ transform:scale(.96); }
+  .chip.active{ background:var(--ink); border-color:var(--ink); color:var(--cream); }
+  .chip .cn{ opacity:.6; font-weight:600; margin-left:3px; }
+
+  /* ---------- Main area (map or list) ---------- */
+  main{ position:relative; flex:1 1 auto; min-height:0; }
+  #map{ position:absolute; inset:0; background:var(--cream-2); }
+  .leaflet-control-attribution{ font-size:9px !important; }
+  .leaflet-bar a{ background:var(--paper) !important; color:var(--ink) !important; border-color:var(--line) !important; }
+
+  #listView{ position:absolute; inset:0; overflow-y:auto; background:var(--cream); padding:6px 14px 100px; display:none; }
+  .tramo-heading{ font-size:12.5px; font-weight:600; color:var(--sage-deep); text-transform:uppercase; letter-spacing:0.5px; margin:16px 2px 8px; display:flex; justify-content:space-between; }
+  .tramo-heading .th-count{ color:var(--ink-faint); font-weight:500; }
+  .list-row{
+    display:flex; align-items:center; gap:10px; background:var(--paper); border:1px solid var(--line);
+    border-radius:14px; padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:transform .08s ease;
+  }
+  .list-row:active{ transform:scale(.99); background:var(--cream-2); }
+  .list-dot{ width:11px; height:11px; border-radius:50%; flex:0 0 auto; }
+  .list-num{ font-size:11px; color:var(--ink-faint); width:16px; flex:0 0 auto; }
+  .list-main{ flex:1 1 auto; min-width:0; }
+  .list-name{ font-size:14px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .list-sub{ font-size:11.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .list-stars{ font-size:10px; color:var(--amber); flex:0 0 auto; }
+  .list-chevron{ color:var(--ink-faint); font-size:13px; flex:0 0 auto; }
+  .list-empty{ color:var(--ink-soft); text-align:center; margin-top:40px; font-size:13.5px; }
+
+  /* ---------- Floating controls on map ---------- */
+  .map-fab{
+    position:absolute; z-index:15; width:44px; height:44px; border-radius:50%;
+    background:var(--paper); box-shadow:var(--shadow-sm); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; color:var(--ink);
+    transition:transform .08s ease;
+  }
+  .map-fab:active{ transform:scale(0.94); }
+  #locateBtn{ right:12px; bottom:12px; }
+  #fitBtn{ right:12px; bottom:64px; }
+  #addBtn{ left:12px; bottom:12px; font-size:22px; }
+  #locateBtn.locating{ animation:spin 1.1s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .geo-banner{
+    position:absolute; top:8px; left:8px; right:8px; z-index:16;
+    background:#FBEFE2; border:1px solid #E0B26B; color:#6B4A17;
+    font-size:12px; padding:8px 10px; border-radius:12px; box-shadow:var(--shadow-sm);
+    display:none; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .geo-banner button{ border:none; background:var(--ink); color:var(--cream); font-size:11.5px; padding:6px 10px; border-radius:8px; cursor:pointer; }
+
+  .add-hint{
+    position:absolute; top:8px; left:8px; right:8px; z-index:17;
+    background:var(--sage-dark); color:#fff; font-size:12.5px; padding:9px 12px; border-radius:12px;
+    box-shadow:var(--shadow-sm); display:none; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .add-hint button{ border:none; background:rgba(255,255,255,.2); color:#fff; font-size:11.5px; padding:6px 10px; border-radius:8px; cursor:pointer; }
+
+  /* ---------- Custom markers ---------- */
+  .marker-badge{
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; border:2.5px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.35);
+    font-family:'General Sans', sans-serif;
+  }
+  .marker-next{ animation:pulseRing 1.8s ease-in-out infinite; }
+  @keyframes pulseRing{
+    0%,100%{ box-shadow:0 0 0 4px rgba(92,122,86,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+    50%{ box-shadow:0 0 0 9px rgba(92,122,86,0.12), 0 2px 6px rgba(0,0,0,0.35); }
+  }
+  .me-dot{ width:16px; height:16px; border-radius:50%; background:#3E6FA6; border:3px solid #fff; box-shadow:0 0 0 5px rgba(62,111,166,0.28), 0 1px 4px rgba(0,0,0,0.4); }
+
+  /* ---------- Next stop bar ---------- */
+  .next-bar{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px; background:var(--paper);
+    border-top:1px solid var(--line); padding:10px 14px; cursor:pointer; z-index:18;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom, 0));
+  }
+  .next-bar .nb-badge{ width:34px; height:34px; border-radius:50%; background:var(--sage-dark); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex:0 0 auto; }
+  .next-bar .nb-info{ flex:1 1 auto; min-width:0; }
+  .next-bar .nb-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--sage-deep); font-weight:600; }
+  .next-bar .nb-name{ font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .next-bar .nb-meta{ font-size:11.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .next-bar .nb-go{ display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:50%; background:var(--ink); color:var(--cream); font-size:16px; text-decoration:none; flex:0 0 auto; }
+  .all-done{ font-size:13.5px; color:var(--sage-deep); font-weight:600; text-align:center; width:100%; }
+
+  /* ---------- Bottom sheet ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(26,26,26,0.38); opacity:0; pointer-events:none; transition:opacity 0.22s ease; z-index:30; }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; background:var(--paper);
+    border-radius:22px 22px 0 0; box-shadow:0 -6px 30px rgba(0,0,0,0.25);
+    transform:translateY(102%); transition:transform 0.28s cubic-bezier(.2,.8,.3,1);
+    z-index:31; max-height:86vh; display:flex; flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom, 0);
+  }
+  .sheet.show{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; background:var(--line); border-radius:3px; margin:10px auto 4px; flex:0 0 auto; }
+  .sheet-close{ position:absolute; right:12px; top:12px; width:30px; height:30px; border-radius:50%; background:var(--cream-2); display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--ink-soft); cursor:pointer; z-index:2; }
+  .sheet-body{ overflow-y:auto; padding:6px 20px 26px; }
+  .sheet-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:2px; }
+  .sheet-title{ font-size:19px; font-weight:600; line-height:1.25; }
+  .sheet-tags{ display:flex; gap:6px; margin:6px 0 10px; flex-wrap:wrap; }
+  .tag{ font-size:10.5px; padding:3px 8px; border-radius:100px; background:var(--cream-2); color:var(--ink-soft); font-weight:500; }
+  .tag.prio{ color:var(--amber); background:rgba(198,138,60,.14); font-weight:700; }
+  .sheet-row{ display:flex; gap:9px; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .sheet-row:last-of-type{ border-bottom:none; }
+  .sheet-row .ic{ width:18px; flex:0 0 auto; text-align:center; opacity:0.75; }
+  .sheet-row .val{ flex:1 1 auto; min-width:0; word-break:break-word; }
+  .sheet-row .val a{ color:var(--sage-deep); text-decoration:none; font-weight:600; }
+  .sheet-row .hook{ color:var(--ink); }
+  .schedule-badge{ display:inline-block; margin-top:4px; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:100px; }
+  .sch-open{ background:rgba(92,122,86,.16); color:var(--sage-deep); }
+  .sch-soon{ background:rgba(198,138,60,.18); color:var(--amber); }
+  .sch-closed{ background:rgba(140,59,46,.16); color:#C0574A; }
+
+  .status-group{ margin:14px 0 4px; }
+  .status-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-faint); margin-bottom:7px; font-weight:600; }
+  .status-btns{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .status-btn{ border:1.5px solid var(--line); background:var(--paper); border-radius:11px; padding:8px 4px; font-size:11.5px; font-weight:600; color:var(--ink-soft); text-align:center; cursor:pointer; transition:transform .08s ease; }
+  .status-btn:active{ transform:scale(.96); }
+  .status-btn.sel-pending.selected{ border-color:var(--st-pending); background:rgba(185,179,162,.18); color:var(--ink); }
+  .status-btn.sel-visited.selected{ border-color:var(--st-visited); background:rgba(62,111,166,.15); color:var(--st-visited); }
+  .status-btn.sel-contacted.selected{ border-color:var(--st-contacted); background:rgba(92,122,86,.15); color:var(--st-contacted); }
+  .status-btn.sel-skipped.selected{ border-color:var(--st-skipped); background:rgba(155,143,130,.18); color:var(--st-skipped); }
+
+  .action-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+  .action-row.single{ grid-template-columns:1fr; }
+  .action-btn{ display:flex; align-items:center; justify-content:center; gap:6px; padding:11px 8px; border-radius:12px; font-size:13.5px; font-weight:600; text-decoration:none; border:none; cursor:pointer; }
+  .action-primary{ background:var(--ink); color:var(--cream); }
+  .action-secondary{ background:var(--cream-2); color:var(--ink); }
+  .action-wa{ background:#25a05a; color:#fff; }
+
+  .note-area, .field-input{ width:100%; border:1.5px solid var(--line); border-radius:12px; padding:9px 11px; font-size:13px; font-family:inherit; background:var(--paper); color:var(--ink); }
+  .note-area{ margin-top:6px; resize:none; }
+  .field-input{ margin-top:6px; }
+  .note-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-faint); margin:14px 0 0; font-weight:600; }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  /* ---------- Legend / Stats / Add sheets ---------- */
+  .legend-row{ display:flex; align-items:center; gap:10px; padding:7px 0; font-size:13px; }
+  .legend-dot{ width:20px; height:20px; border-radius:50%; flex:0 0 auto; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); }
+  .legend-title{ font-size:12px; text-transform:uppercase; letter-spacing:0.4px; color:var(--ink-faint); font-weight:700; margin:16px 0 2px; }
+  .legend-title:first-of-type{ margin-top:6px; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 4px; }
+  .stat-card{ background:var(--cream-2); border-radius:14px; padding:12px 14px; }
+  .stat-num{ font-size:26px; font-weight:700; color:var(--ink); line-height:1; font-family:'Instrument Serif',serif; font-style:italic; }
+  .stat-lbl{ font-size:11px; color:var(--ink-soft); margin-top:5px; }
+  .stat-full{ grid-column:1 / -1; }
+  .mini-track{ height:8px; border-radius:5px; background:var(--paper); overflow:hidden; display:flex; margin-top:8px; }
+  .breakdown{ margin-top:14px; }
+  .bd-row{ display:flex; align-items:center; gap:8px; padding:5px 0; font-size:12.5px; color:var(--ink-soft); }
+  .bd-dot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+  .bd-val{ margin-left:auto; font-weight:600; color:var(--ink); }
+  .export-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:18px; }
+  .export-row .action-btn{ font-size:12.5px; }
+  .danger-link{ display:block; text-align:center; margin-top:16px; color:#C0574A; font-size:12.5px; font-weight:600; cursor:pointer; }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed; left:50%; bottom:88px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--cream); font-size:13px; font-weight:500;
+    padding:11px 14px; border-radius:12px; box-shadow:var(--shadow); z-index:40;
+    display:flex; align-items:center; gap:12px; opacity:0; pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease; max-width:90vw;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast button{ background:transparent; border:none; color:var(--sage); font-weight:700; font-size:13px; cursor:pointer; padding:0; }
+
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="word">atrıo</div>
+    <div class="sub" id="brandSub">Ruta comercial · Centro MDP</div>
+  </div>
+  <div class="head-actions">
+    <div class="icon-btn" id="statsBtn" title="Resumen del día" aria-label="Resumen">📊</div>
+    <div class="icon-btn" id="themeBtn" title="Modo claro/oscuro" aria-label="Tema">◐</div>
+    <div class="icon-btn" id="legendBtn" title="Referencias" aria-label="Referencias">?</div>
+    <div class="icon-btn" id="viewToggle" title="Ver lista" aria-label="Cambiar vista">☰</div>
+  </div>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="s-ic">🔍</span>
+    <input type="text" id="searchInput" placeholder="Buscar comercio, rubro o dirección…" autocomplete="off" spellcheck="false" />
+    <span class="s-clear" id="searchClear">✕</span>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-stats">
+    <span class="goal">🎯 <b id="contactedCount">0</b> contactos · <b id="visitedTotalCount">0</b>/<span id="totalCount">19</span> visitados</span>
+    <span class="goal" id="clockNow">--:--</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-seg seg-contacted" id="segContacted" style="width:0%"></div>
+    <div class="progress-seg seg-visited" id="segVisited" style="width:0%"></div>
+    <div class="progress-seg seg-skipped" id="segSkipped" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="chips" id="chips">
+  <div class="chip active" data-filter="all">Todos</div>
+  <div class="chip" data-filter="pending">Pendientes</div>
+  <div class="chip" data-filter="top">★★★ Alta</div>
+  <div class="chip" data-filter="followup">⏰ A seguir</div>
+  <div class="chip" data-filter="t1">Tramo 1</div>
+  <div class="chip" data-filter="t2">Tramo 2</div>
+  <div class="chip" data-filter="t3">Tramo 3</div>
+  <div class="chip" data-filter="contacted">Contactados</div>
+</div>
+
+<main>
+  <div id="map"></div>
+  <div id="listView"></div>
+  <div class="geo-banner" id="geoBanner">
+    <span>Activá tu ubicación para ver distancias y guiarte.</span>
+    <button id="geoBtn">Activar</button>
+  </div>
+  <div class="add-hint" id="addHint">
+    <span>📍 Tocá el mapa donde está el nuevo comercio…</span>
+    <button id="addCancel">Cancelar</button>
+  </div>
+  <div class="map-fab" id="addBtn" title="Agregar comercio">＋</div>
+  <div class="map-fab" id="fitBtn" title="Ver toda la ruta">⤢</div>
+  <div class="map-fab" id="locateBtn" title="Mi ubicación">◎</div>
+</main>
+
+<div class="next-bar" id="nextBar">
+  <div class="nb-badge" id="nbBadge">–</div>
+  <div class="nb-info">
+    <div class="nb-label">Próxima parada</div>
+    <div class="nb-name" id="nbName">Cargando…</div>
+    <div class="nb-meta" id="nbMeta"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="sheet" id="sheet">
+  <span class="sheet-close" data-close="1">✕</span>
+  <div class="sheet-handle"></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<div class="sheet" id="statsSheet">
+  <span class="sheet-close" data-close="1">✕</span>
+  <div class="sheet-handle"></div>
+  <div class="sheet-body" id="statsBody"></div>
+</div>
+
+<div class="sheet" id="addSheet">
+  <span class="sheet-close" data-close="1">✕</span>
+  <div class="sheet-handle"></div>
+  <div class="sheet-body" id="addBody"></div>
+</div>
+
+<div class="sheet" id="legendSheet">
+  <span class="sheet-close" data-close="1">✕</span>
+  <div class="sheet-handle"></div>
+  <div class="sheet-body">
+    <div class="sheet-title" style="margin-bottom:8px;">Referencias</div>
+    <div class="legend-title">Prioridad (tamaño del pin)</div>
+    <div class="legend-row"><span style="font-size:15px; letter-spacing:1px;">★★★</span> Hook fuerte — visitar sí o sí</div>
+    <div class="legend-row"><span style="font-size:15px; letter-spacing:1px;">★★</span> Buen candidato</div>
+    <div class="legend-row"><span style="font-size:15px; letter-spacing:1px;">★</span> Oportunista / de paso</div>
+    <div class="legend-title">Estado (color del pin)</div>
+    <div class="legend-row"><span class="legend-dot" style="background:var(--st-pending)"></span> Pendiente</div>
+    <div class="legend-row"><span class="legend-dot" style="background:var(--st-visited)"></span> Visitado (nadie / cerrado)</div>
+    <div class="legend-row"><span class="legend-dot" style="background:var(--st-contacted)"></span> Contacto hecho</div>
+    <div class="legend-row"><span class="legend-dot" style="background:var(--st-skipped)"></span> Salteado</div>
+    <div class="legend-title">Datos</div>
+    <div class="legend-row" style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">Verificado en vivo el 13/7/2026. El progreso, las notas y los comercios que agregues se guardan en este dispositivo. Funciona sin señal una vez cargado.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAction" style="display:none"></button></div>
+
+<script src="vendor/leaflet.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   DATA — leads verificados (13/7/2026)
+   ============================================================ */
+var SEED_STOPS = [
+  {id:1, tramo:1, priority:3, name:"Hotel Antártida", category:"Hotelería",
+   address:"Luro 2156", phoneRaw:"+54 223 491 5450", email:null, lat:-38.0009819, lng:-57.5420546, placeId:null,
+   rating:null, reviews:null, web:"Rota — el dominio no resuelve", webKind:"broken",
+   hook:"Google manda tráfico a una web caída.", tip:"Recuperar presencia + motor de reservas.",
+   opensAt:null, closesAt:null},
+  {id:2, tramo:1, priority:2, name:"Bocina's", category:"Gastronomía",
+   address:"Rivadavia 2262", phoneRaw:"+54 223 494 7842", email:null, lat:-38.0020334, lng:-57.5442718, placeId:null,
+   rating:null, reviews:null, web:"No tiene", webKind:"none",
+   hook:"Sin presencia digital.", tip:"Carta online + pedidos.", opensAt:null, closesAt:null},
+  {id:3, tramo:1, priority:2, name:"Indumentaria Mare", category:"Indumentaria",
+   address:"Santiago del Estero 1952", phoneRaw:"+54 223 439-9798", email:null, lat:-38.0018407, lng:-57.5473251, placeId:"ChIJ0SSZ8hzchJURveIsMn-MY4E",
+   rating:4.7, reviews:58, web:"No tiene", webKind:"none",
+   hook:"Buena reputación (4.7★), sin web propia.", tip:"Catálogo online.", opensAt:null, closesAt:"18:00"},
+  {id:4, tramo:1, priority:2, name:"Setenta y Tres Vinoteca", category:"Vinoteca",
+   address:"Corrientes 2082", phoneRaw:"+54 223 511-6831", email:null, lat:-38.0035, lng:-57.5461, placeId:null,
+   rating:5.0, reviews:3, web:"No tiene", webKind:"none",
+   hook:"Vinoteca recién abierta.", tip:"Armar identidad + web desde el día uno.", opensAt:null, closesAt:null},
+  {id:5, tramo:1, priority:2, name:"Hotel Ártico", category:"Hotelería",
+   address:"Av. Colón 2343", phoneRaw:"+54 223 560-1079", email:"articohotel@gmail.com", lat:-38.0051644, lng:-57.5464853, placeId:null,
+   rating:null, reviews:null, web:"Activa, template gratuito viejo (sin motor de reservas)", webKind:"outdated",
+   hook:"Web vieja, sin reservas online.", tip:"Modernización + motor de reservas propio.", opensAt:null, closesAt:null, whatsapp:true},
+  {id:6, tramo:2, priority:2, name:"Torre Surrey II", category:"Alojamiento",
+   address:"Colón 2988", phoneRaw:"+54 223 491-8812", email:null, lat:-38.001675, lng:-57.553928, placeId:null,
+   rating:null, reviews:null, web:"No tiene", webKind:"none",
+   hook:"Apart hotel sin presencia digital.", tip:"", opensAt:null, closesAt:null},
+  {id:7, tramo:2, priority:3, name:"Suárez — Café de Especialidad", category:"Gastronomía",
+   address:"Bolívar 2903", phoneRaw:"02235625604", email:null, lat:-38.0010086, lng:-57.5524804, placeId:null,
+   rating:4.8, reviews:319, web:"Solo Instagram (@suarez.cafe)", webKind:"social",
+   hook:"El mejor café del tramo (4.8★, 319 reseñas).", tip:"Sugerencia: pausa acá ~16:20.", opensAt:null, closesAt:null},
+  {id:8, tramo:2, priority:2, name:"Consultorio Odontológico Bolivar", category:"Salud",
+   address:"Bolívar 2817", phoneRaw:"+54 223 493-0315", email:"consultorioodontologicobolivar@gmail.com", lat:-38.001347, lng:-57.5516807, placeId:null,
+   rating:null, reviews:null, web:"No tiene", webKind:"none",
+   hook:"Sin presencia digital.", tip:"Turnos online + presencia profesional.", opensAt:null, closesAt:null},
+  {id:9, tramo:2, priority:1, name:"Gimnasio City Hall", category:"Fitness",
+   address:"Moreno 2651", phoneRaw:"02234932998", email:null, lat:-38.0014071, lng:-57.5491344, placeId:null,
+   rating:null, reviews:null, web:"No tiene", webKind:"none",
+   hook:"Sin presencia digital.", tip:"Landing con planes + alta online.", opensAt:null, closesAt:null},
+  {id:10, tramo:2, priority:3, name:"Las Menades", category:"Vinoteca",
+   address:"Catamarca 2233", phoneRaw:"+54 223 593-6160", email:null, lat:-38.0012044, lng:-57.5555674, placeId:"ChIJY9QH6W_fhJURmM0Q7SASgsk",
+   rating:5.0, reviews:112, web:"No tiene", webKind:"none",
+   hook:"5.0★ con 112 reseñas. Dueño Joaquín, hace eventos con bodegas.", tip:"Horario partido: reabre 16:30.", opensAt:"16:30", closesAt:null},
+  {id:11, tramo:2, priority:3, name:"Cava Mitre", category:"Vinoteca",
+   address:"La Rioja 2126", phoneRaw:"+54 223 569-4078", email:null, lat:-38.0010918, lng:-57.5536958, placeId:"ChIJU_9-HKjehJURDxJDdnYiOLc",
+   rating:4.8, reviews:247, web:"Solo Rappi / Instagram", webKind:"social",
+   hook:"Atienden Francisco y su padre.", tip:"Mencionar el caso Oveja Negra.", opensAt:null, closesAt:null},
+  {id:12, tramo:3, priority:1, name:"Tempo — Café de Especialidad", category:"Gastronomía",
+   address:"La Rioja 1954", phoneRaw:"02236770064", email:null, lat:-37.999625, lng:-57.5522588, placeId:"ChIJQwI0DOzdhJURP9w1aWef9EU",
+   rating:4.5, reviews:103, web:"Solo Instagram (@tempocoffee_)", webKind:"social",
+   hook:"Prioridad baja, parada de paso.", tip:"", opensAt:null, closesAt:null},
+  {id:13, tramo:3, priority:3, name:"Novecento Joyas", category:"Joyería",
+   address:"La Rioja 1759 (+ relojería en 1773)", phoneRaw:"+54 223 491-8747", email:null, lat:-37.9978315, lng:-57.5513587, placeId:"ChIJ0Sf3RALchJUR-VZ3x5ih55A",
+   rating:4.2, reviews:424, web:"Rota — Google la linkea a novecentojoyas.com.ar, que no resuelve", webKind:"broken",
+   hook:"Mismo caso que Antártida: Google manda tráfico a una web muerta.", tip:"Horario real (cartel): 9:30-13:30 y 15-19hs, distinto al de Google.", opensAt:null, closesAt:"19:00"},
+  {id:14, tramo:3, priority:2, name:"Óptica Central", category:"Óptica",
+   address:"San Martín 3118 (peatonal)", phoneRaw:"+54 223 495-6663", email:null, lat:-37.9968627, lng:-57.5523114, placeId:"ChIJf8i_GwLchJURyMZV6kR6teE",
+   rating:4.9, reviews:28, web:"No tiene", webKind:"none",
+   hook:"4.9★, clientela fiel de 15 años.", tip:"Llegar como máximo 17:45.", opensAt:null, closesAt:"18:00"},
+  {id:15, tramo:3, priority:2, name:"Turmalina", category:"Indumentaria",
+   address:"Diag. Pueyrredón 2928", phoneRaw:"+54 223 531-3560", email:null, lat:-37.9985101, lng:-57.5493855, placeId:"ChIJkxMODgPchJURly_24P9nM1w",
+   rating:4.6, reviews:117, web:"No tiene", webKind:"none",
+   hook:"Atendida por los dueños.", tip:"", opensAt:null, closesAt:"19:00"},
+  {id:16, tramo:3, priority:2, name:"Guapas — Centro de Estética", category:"Estética",
+   address:"25 de Mayo 3175", phoneRaw:"02235836033", email:null, lat:-37.9946639, lng:-57.5511535, placeId:"ChIJD74DbgzfhJURYkVYyC9AbPs",
+   rating:4.5, reviews:22, web:"Solo Instagram (@guapas.centro)", webKind:"social",
+   hook:"", tip:"Reservas online.", opensAt:null, closesAt:"19:00"},
+  {id:17, tramo:3, priority:1, name:"Tienda Libre de Gluten", category:"Alimentación",
+   address:"Zona La Rioja / 25 de Mayo (confirmar en puerta)", phoneRaw:null, email:null, lat:-37.9959966, lng:-57.5491761, placeId:null,
+   rating:null, reviews:null, web:"A verificar in situ", webKind:"unknown",
+   hook:"Dirección exacta pendiente de confirmar.", tip:"", opensAt:null, closesAt:null},
+  {id:18, tramo:3, priority:1, name:"Nonina", category:"Sin confirmar",
+   address:"9 de Julio 2898", phoneRaw:"0223 155 228011", email:null, lat:-37.9955236, lng:-57.5478612, placeId:null,
+   rating:null, reviews:null, web:"A verificar in situ", webKind:"unknown",
+   hook:"Confirmar rubro y estado en la puerta.", tip:"", opensAt:null, closesAt:null},
+  {id:19, tramo:3, priority:2, name:"Lyssa", category:"Estética",
+   address:"3 de Febrero 2934", phoneRaw:"0223 156237391", email:null, lat:-37.9946382, lng:-57.5476757, placeId:"ChIJEYkbxfjbhJURUZGyp4y6JBo",
+   rating:4.6, reviews:70, web:"No tiene", webKind:"none",
+   hook:"Si van justos de tiempo, se deja para otro día.", tip:"", opensAt:null, closesAt:"18:00"}
+];
+
+var STOPS = SEED_STOPS.slice();   // seed + custom stops merged at load
+
+var STATUS_COLORS = {
+  pending:getCss('--st-pending'), visited:getCss('--st-visited'),
+  contacted:getCss('--st-contacted'), skipped:getCss('--st-skipped')
+};
+var STATUS_LABELS = {pending:"Pendiente", visited:"Visité", contacted:"Contacto ✓", skipped:"Salteo"};
+var TRAMO_LABELS = {1:"Tramo 1 · Luro / Colón", 2:"Tramo 2 · Bolívar / Rioja", 3:"Tramo 3 · Peatonal / Norte", 4:"Agregados en la calle"};
+
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var state = {
+  log: {},
+  custom: [],
+  filter: 'all',
+  search: '',
+  view: 'map',
+  sort: 'route',       // route | near | priority
+  userLatLng: null,
+  activeStopId: null,
+  theme: null,
+  addMode: false,
+  dayStart: null
+};
+
+function statusOf(id){ return (state.log[id] && state.log[id].status) || 'pending'; }
+function noteOf(id){ return (state.log[id] && state.log[id].note) || ''; }
+function followOf(id){ return (state.log[id] && state.log[id].followUp) || ''; }
+function contactOf(id){ return (state.log[id] && state.log[id].contactName) || ''; }
+function stopById(id){ for(var i=0;i<STOPS.length;i++){ if(STOPS[i].id===id) return STOPS[i]; } return null; }
+
+/* ============================================================
+   STORAGE — localStorage (con fallback al storage de artifacts)
+   ============================================================ */
+var LS = { log:'atrio-map-log', custom:'atrio-map-custom', theme:'atrio-map-theme', day:'atrio-map-daystart' };
+function lsGet(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ window.localStorage.setItem(k,v); }catch(e){} }
+
+function loadAll(){
+  try{ state.log = JSON.parse(lsGet(LS.log)) || {}; }catch(e){ state.log = {}; }
+  try{ state.custom = JSON.parse(lsGet(LS.custom)) || []; }catch(e){ state.custom = []; }
+  state.theme = lsGet(LS.theme);
+  state.dayStart = lsGet(LS.day);
+  if(!state.dayStart){ state.dayStart = String(startOfToday()); lsSet(LS.day, state.dayStart); }
+  STOPS = SEED_STOPS.concat(state.custom);
+}
+function saveLog(){ lsSet(LS.log, JSON.stringify(state.log)); }
+function saveCustom(){ lsSet(LS.custom, JSON.stringify(state.custom)); }
+function startOfToday(){ var d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function haversine(lat1, lon1, lat2, lon2){
+  var R = 6371000, toRad = function(d){ return d*Math.PI/180; };
+  var dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function distTo(stop){ return state.userLatLng ? haversine(state.userLatLng[0], state.userLatLng[1], stop.lat, stop.lng) : null; }
+function fmtDist(m){
+  if(m == null) return null;
+  if(m < 1000) return Math.round(m/10)*10 + ' m';
+  return (m/1000).toFixed(1) + ' km';
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function telHref(raw){
+  if(!raw) return null;
+  var d = raw.replace(/\D/g,'');
+  if(d.indexOf('0')===0) d = d.slice(1);
+  if(d.indexOf('54')===0) d = d.slice(2);
+  if(d.indexOf('223')===0 && d.slice(3,5)==='15'){ d = '9223' + d.slice(5); }
+  return 'tel:+54' + d;
+}
+function waHref(raw, text){
+  var t = telHref(raw);
+  if(!t) return null;
+  var url = 'https://wa.me/' + t.replace('tel:+','');
+  if(text) url += '?text=' + encodeURIComponent(text);
+  return url;
+}
+function directionsUrl(stop){
+  var url = 'https://www.google.com/maps/dir/?api=1&destination=' + stop.lat + ',' + stop.lng + '&travelmode=walking';
+  if(stop.placeId) url += '&destination_place_id=' + stop.placeId;
+  return url;
+}
+function pad2(n){ return n<10 ? '0'+n : ''+n; }
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function scheduleStatus(stop){
+  var now = new Date();
+  var nowMin = now.getHours()*60 + now.getMinutes();
+  if(stop.opensAt){
+    var op = stop.opensAt.split(':'); var openMin = (+op[0])*60 + (+op[1]);
+    if(nowMin < openMin){ return {kind:'soon', text:'Abre a las ' + stop.opensAt + ' · faltan ' + (openMin-nowMin) + ' min'}; }
+  }
+  if(stop.closesAt){
+    var cl = stop.closesAt.split(':'); var closeMin = (+cl[0])*60 + (+cl[1]);
+    var diff = closeMin - nowMin;
+    if(diff <= 0) return {kind:'closed', text:'Ya cerró (' + stop.closesAt + 'hs)'};
+    if(diff <= 30) return {kind:'soon', text:'Cierra en ' + diff + ' min'};
+    return {kind:'open', text:'Cierra a las ' + stop.closesAt};
+  }
+  return null;
+}
+function starStr(p){ return p===3 ? '★★★' : p===2 ? '★★' : '★'; }
+function markerSize(p){ return p===3 ? 44 : p===2 ? 36 : 28; }
+
+/* Pitch de venta según el estado web del comercio */
+function pitchMessage(stop){
+  var reason;
+  switch(stop.webKind){
+    case 'broken': reason = 'el link a la web que aparece en Google no está funcionando'; break;
+    case 'outdated': reason = 'la web está un poco desactualizada y sin reservas/pedidos online'; break;
+    case 'social': reason = 'manejan todo por redes y una web propia les sumaría un montón'; break;
+    case 'none': reason = 'todavía no tienen una web propia'; break;
+    default: reason = 'nos gustaría mostrarles algunas ideas para su presencia online';
+  }
+  var first = stop.name.split(/[—·(]/)[0].trim();
+  return 'Hola! Les escribo de atrıo, un estudio de diseño de Mar del Plata. Pasé por ' + first +
+    ' y vi que ' + reason + '. Trabajamos webs y catálogos para comercios de la zona y me encantaría mostrarles un par de ideas, sin compromiso. ¿Tienen un rato esta semana?';
+}
+function mailtoHref(stop){
+  if(!stop.email) return null;
+  var subj = 'atrıo · una idea para ' + stop.name.split(/[—·(]/)[0].trim();
+  return 'mailto:'+stop.email+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(pitchMessage(stop));
+}
+
+/* ============================================================
+   MAP
+   ============================================================ */
+var map, markers = {}, routeLine, meMarker, meCircle, tileLayer;
+
+function tileUrl(){
+  var dark = document.documentElement.getAttribute('data-theme')==='dark';
+  return 'https://{s}.basemaps.cartocdn.com/' + (dark?'dark_all':'light_all') + '/{z}/{x}/{y}{r}.png';
+}
+function initMap(){
+  map = L.map('map', {zoomControl:false, attributionControl:true}).setView([-38.001, -57.548], 15);
+  tileLayer = L.tileLayer(tileUrl(), { attribution:'© OpenStreetMap, © CARTO', maxZoom:19, subdomains:'abcd' }).addTo(map);
+  L.control.zoom({position:'bottomleft'}).addTo(map);
+  routeLine = L.polyline([], {color:getCss('--sage-dark'), weight:3, opacity:0.5, dashArray:'1,9', lineCap:'round'}).addTo(map);
+  rebuildMarkers();
+  map.on('click', function(e){ if(state.addMode) placeNewStop(e.latlng); });
+  fitAll();
+}
+function refreshTiles(){ if(tileLayer) tileLayer.setUrl(tileUrl()); if(routeLine) routeLine.setStyle({color:getCss('--sage-dark')}); }
+
+function rebuildMarkers(){
+  Object.keys(markers).forEach(function(k){ map.removeLayer(markers[k]); });
+  markers = {};
+  STOPS.forEach(function(stop){
+    var m = L.marker([stop.lat, stop.lng], {icon:iconFor(stop)});
+    m.on('click', function(){ openSheet(stop.id); });
+    m.addTo(map);
+    markers[stop.id] = m;
+  });
+  routeLine.setLatLngs(SEED_STOPS.map(function(s){ return [s.lat, s.lng]; }));
+  applyFilterToMap();
+}
+
+function iconFor(stop){
+  var status = statusOf(stop.id);
+  var size = markerSize(stop.priority);
+  var color = STATUS_COLORS[status];
+  var ns = nextStop();
+  var isNext = ns && ns.id === stop.id;
+  var label = (''+stop.id).length > 2 ? '＋' : stop.id;
+  return L.divIcon({
+    className:'',
+    html:'<div class="marker-badge'+(isNext?' marker-next':'')+'" style="width:'+size+'px;height:'+size+'px;background:'+color+';font-size:'+(size*0.4)+'px;">'+label+'</div>',
+    iconSize:[size,size], iconAnchor:[size/2,size/2], popupAnchor:[0,-size/2]
+  });
+}
+function refreshMarker(stop){ if(markers[stop.id]) markers[stop.id].setIcon(iconFor(stop)); }
+function refreshAllMarkers(){ STOPS.forEach(refreshMarker); }
+
+function fitAll(){
+  var pts = STOPS.map(function(s){ return [s.lat,s.lng]; });
+  if(state.userLatLng) pts.push(state.userLatLng);
+  map.fitBounds(L.latLngBounds(pts), {padding:[40,40]});
+}
+function panTo(stop){ map.setView([stop.lat, stop.lng], Math.max(map.getZoom(),16), {animate:true}); }
+
+function updateMeMarker(){
+  if(!state.userLatLng) return;
+  var icon = L.divIcon({className:'', html:'<div class="me-dot"></div>', iconSize:[16,16], iconAnchor:[8,8]});
+  if(meMarker){ meMarker.setLatLng(state.userLatLng); }
+  else{ meMarker = L.marker(state.userLatLng, {icon:icon, zIndexOffset:1000}).addTo(map); }
+}
+
+/* ============================================================
+   GEOLOCATION
+   ============================================================ */
+var geoWatchId = null;
+function tryGeolocation(auto){
+  if(!('geolocation' in navigator)){ showGeoBanner(true, 'La ubicación no está disponible en este navegador.'); return; }
+  var btn = document.getElementById('locateBtn');
+  btn.classList.add('locating');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    btn.classList.remove('locating');
+    state.userLatLng = [pos.coords.latitude, pos.coords.longitude];
+    updateMeMarker(); showGeoBanner(false);
+    renderNextBar(); renderList();
+    if(!auto) map.setView(state.userLatLng, 16);
+    if(geoWatchId === null){
+      geoWatchId = navigator.geolocation.watchPosition(function(p){
+        state.userLatLng = [p.coords.latitude, p.coords.longitude];
+        updateMeMarker(); renderNextBar(); if(state.view==='list' && state.sort==='near') renderList();
+      }, function(){}, {enableHighAccuracy:true, maximumAge:15000});
+    }
+  }, function(err){
+    btn.classList.remove('locating');
+    if(!auto) showGeoBanner(true, 'No pudimos acceder a tu ubicación. Revisá los permisos del navegador.');
+  }, {enableHighAccuracy:true, timeout:8000, maximumAge:10000});
+}
+function showGeoBanner(show, text){
+  var b = document.getElementById('geoBanner');
+  if(text) b.querySelector('span').textContent = text;
+  b.style.display = show ? 'flex' : 'none';
+}
+
+/* ============================================================
+   NEXT STOP — pendiente más cercano si hay ubicación, si no por ruta
+   ============================================================ */
+function nextStop(){
+  var pend = STOPS.filter(function(s){ return statusOf(s.id)==='pending'; });
+  if(!pend.length) return null;
+  if(state.userLatLng){
+    pend.sort(function(a,b){ return distTo(a)-distTo(b); });
+    return pend[0];
+  }
+  return pend[0];
+}
+function renderNextBar(){
+  var ns = nextStop();
+  var bar = document.getElementById('nextBar');
+  if(!ns){
+    bar.innerHTML = '<div class="all-done">✓ Recorrido completo — ¡lindo trabajo!</div>';
+    bar.onclick = null;
+    return;
+  }
+  var meta = starStr(ns.priority) + ' · ' + ns.category;
+  var d = distTo(ns);
+  if(d!=null) meta += ' · ' + fmtDist(d);
+  var sch = scheduleStatus(ns);
+  if(sch) meta += ' · ' + sch.text;
+  bar.innerHTML = '<div class="nb-badge">'+( (''+ns.id).length>2?'＋':ns.id )+'</div>'+
+    '<div class="nb-info"><div class="nb-label">'+(state.userLatLng?'Parada más cercana':'Próxima parada')+'</div>'+
+    '<div class="nb-name">'+esc(ns.name)+'</div>'+
+    '<div class="nb-meta">'+esc(meta)+'</div></div>'+
+    '<a class="nb-go" href="'+directionsUrl(ns)+'" target="_blank" rel="noopener" title="Cómo llegar" onclick="event.stopPropagation()">🧭</a>';
+  bar.onclick = function(){ openSheet(ns.id); panTo(ns); };
+}
+
+/* ============================================================
+   PROGRESS
+   ============================================================ */
+function counts(){
+  var c = {pending:0, visited:0, contacted:0, skipped:0};
+  STOPS.forEach(function(s){ c[statusOf(s.id)]++; });
+  return c;
+}
+function renderProgress(){
+  var c = counts(); var total = STOPS.length;
+  var visitedTotal = c.visited + c.contacted;
+  document.getElementById('contactedCount').textContent = c.contacted;
+  document.getElementById('visitedTotalCount').textContent = visitedTotal;
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('segContacted').style.width = (c.contacted/total*100) + '%';
+  document.getElementById('segVisited').style.width = (c.visited/total*100) + '%';
+  document.getElementById('segSkipped').style.width = (c.skipped/total*100) + '%';
+  var fups = STOPS.filter(function(s){ return followOf(s.id) && statusOf(s.id)!=='contacted'; }).length;
+  var chipFu = document.querySelector('.chip[data-filter="followup"]');
+  if(chipFu) chipFu.innerHTML = '⏰ A seguir' + (fups?' <span class="cn">'+fups+'</span>':'');
+}
+
+/* ============================================================
+   FILTER + SORT
+   ============================================================ */
+function matchesFilter(stop){
+  if(state.search){
+    var q = state.search.toLowerCase();
+    var hay = (stop.name+' '+stop.category+' '+stop.address).toLowerCase();
+    if(hay.indexOf(q) === -1) return false;
+  }
+  switch(state.filter){
+    case 't1': return stop.tramo===1;
+    case 't2': return stop.tramo===2;
+    case 't3': return stop.tramo===3;
+    case 'top': return stop.priority===3;
+    case 'pending': return statusOf(stop.id)==='pending';
+    case 'contacted': return statusOf(stop.id)==='contacted';
+    case 'followup': return !!followOf(stop.id) && statusOf(stop.id)!=='contacted';
+    default: return true;
+  }
+}
+function applyFilterToMap(){
+  STOPS.forEach(function(stop){
+    var show = matchesFilter(stop);
+    var el = markers[stop.id] && markers[stop.id].getElement();
+    if(el) el.style.display = show ? '' : 'none';
+  });
+}
+
+/* ============================================================
+   LIST VIEW
+   ============================================================ */
+function renderList(){
+  var wrap = document.getElementById('listView');
+  var items = STOPS.filter(matchesFilter);
+  var html = '';
+
+  if(state.sort==='near' && state.userLatLng){
+    items.sort(function(a,b){ return distTo(a)-distTo(b); });
+    html += '<div class="tramo-heading">Más cercanos primero <span class="th-count">'+items.length+'</span></div>';
+    items.forEach(function(s){ html += listRow(s); });
+  } else if(state.sort==='priority'){
+    items.sort(function(a,b){ return b.priority-a.priority || a.id-b.id; });
+    html += '<div class="tramo-heading">Por prioridad <span class="th-count">'+items.length+'</span></div>';
+    items.forEach(function(s){ html += listRow(s); });
+  } else {
+    [1,2,3,4].forEach(function(t){
+      var group = items.filter(function(s){ return s.tramo===t; });
+      if(!group.length) return;
+      html += '<div class="tramo-heading">'+esc(TRAMO_LABELS[t])+' <span class="th-count">'+group.length+'</span></div>';
+      group.forEach(function(s){ html += listRow(s); });
+    });
+  }
+  wrap.innerHTML = html || '<p class="list-empty">No hay paradas con este filtro.</p>';
+  Array.prototype.forEach.call(wrap.querySelectorAll('.list-row'), function(row){
+    row.addEventListener('click', function(){ openSheet(+row.getAttribute('data-id')); });
+  });
+}
+function listRow(s){
+  var st = statusOf(s.id);
+  var d = state.userLatLng ? fmtDist(distTo(s)) : null;
+  var fu = followOf(s.id);
+  var sub = s.address + (d?' · '+d:'') + (fu?' · ⏰ '+fu:'');
+  return '<div class="list-row" data-id="'+s.id+'">'+
+    '<span class="list-num">#'+s.id+'</span>'+
+    '<span class="list-dot" style="background:'+STATUS_COLORS[st]+'"></span>'+
+    '<div class="list-main">'+
+      '<div class="list-name">'+esc(s.name)+'</div>'+
+      '<div class="list-sub">'+esc(sub)+'</div>'+
+    '</div>'+
+    '<span class="list-stars">'+starStr(s.priority)+'</span>'+
+    '<span class="list-chevron">›</span>'+
+  '</div>';
+}
+
+/* ============================================================
+   BOTTOM SHEET — detalle
+   ============================================================ */
+function openSheet(id){
+  state.activeStopId = id;
+  var stop = stopById(id); if(!stop) return;
+  var status = statusOf(id);
+  var sch = scheduleStatus(stop);
+  var d = state.userLatLng ? fmtDist(distTo(stop)) : null;
+
+  var rows = '';
+  rows += rowHtml('📍', esc(stop.address) + (d ? ' · <b>'+d+'</b>' : ''));
+  if(stop.phoneRaw){
+    var tel = telHref(stop.phoneRaw);
+    rows += rowHtml('📞', '<a href="'+tel+'">'+esc(stop.phoneRaw)+'</a>');
+  }
+  if(stop.email) rows += rowHtml('✉️', '<a href="mailto:'+esc(stop.email)+'">'+esc(stop.email)+'</a>');
+  if(stop.rating) rows += rowHtml('⭐', stop.rating.toFixed(1) + '★ · ' + stop.reviews + ' reseñas');
+  if(stop.web) rows += rowHtml('🌐', esc(stop.web));
+  if(stop.hook) rows += rowHtml('💡', '<span class="hook">'+esc(stop.hook)+'</span>');
+  if(stop.tip) rows += rowHtml('📝', '<span class="hook">'+esc(stop.tip)+'</span>');
+  if(sch) rows += rowHtml(sch.kind==='closed'?'⛔':'🕒', '<span class="schedule-badge sch-'+sch.kind+'">'+esc(sch.text)+'</span>');
+
+  var wa = stop.phoneRaw ? waHref(stop.phoneRaw, pitchMessage(stop)) : null;
+  var mail = mailtoHref(stop);
+
+  var actions = '';
+  actions += '<a class="action-btn action-primary" href="'+directionsUrl(stop)+'" target="_blank" rel="noopener">🧭 Cómo llegar</a>';
+  if(wa) actions += '<a class="action-btn action-wa" href="'+wa+'" target="_blank" rel="noopener">💬 WhatsApp</a>';
+  else if(stop.phoneRaw) actions += '<a class="action-btn action-secondary" href="'+telHref(stop.phoneRaw)+'">📞 Llamar</a>';
+  else actions += '<span></span>';
+
+  var extraActions = '';
+  if(wa && stop.phoneRaw) extraActions += '<a class="action-btn action-secondary" href="'+telHref(stop.phoneRaw)+'">📞 Llamar</a>';
+  if(mail) extraActions += '<a class="action-btn action-secondary" href="'+mail+'">✉️ Mail</a>';
+
+  var body =
+    '<div class="sheet-top"><div class="sheet-title">'+esc(stop.name)+'</div></div>'+
+    '<div class="sheet-tags">'+
+      '<span class="tag prio">'+starStr(stop.priority)+'</span>'+
+      '<span class="tag">'+esc(TRAMO_LABELS[stop.tramo].split('·')[0].trim())+'</span>'+
+      '<span class="tag">'+esc(stop.category)+'</span>'+
+      '<span class="tag">#'+stop.id+'</span>'+
+    '</div>'+
+    rows +
+    '<div class="status-group">'+
+      '<div class="status-label">Estado de la visita</div>'+
+      '<div class="status-btns">'+
+        statusBtnHtml('pending', status) + statusBtnHtml('visited', status) +
+        statusBtnHtml('contacted', status) + statusBtnHtml('skipped', status) +
+      '</div>'+
+    '</div>'+
+    '<div class="action-row">'+actions+'</div>'+
+    (extraActions ? '<div class="action-row'+(extraActions.split('action-btn').length-1===1?' single':'')+'" style="margin-top:8px">'+extraActions+'</div>' : '')+
+    '<div class="two-col">'+
+      '<div><div class="note-label">Contacto</div>'+
+        '<input class="field-input" id="contactInput" placeholder="Nombre / cargo" value="'+esc(contactOf(id))+'" /></div>'+
+      '<div><div class="note-label">Volver a contactar</div>'+
+        '<input class="field-input" id="followInput" type="date" value="'+esc(followOf(id))+'" /></div>'+
+    '</div>'+
+    '<div class="note-label">Nota rápida</div>'+
+    '<textarea class="note-area" id="noteArea" rows="2" placeholder="Ej: habló con Francisco, volver el jueves…">'+esc(noteOf(id))+'</textarea>'+
+    (stop.custom ? '<span class="danger-link" id="delStop">🗑 Eliminar este comercio</span>' : '');
+
+  document.getElementById('sheetBody').innerHTML = body;
+  Array.prototype.forEach.call(document.querySelectorAll('#sheet .status-btn'), function(b){
+    b.addEventListener('click', function(){ setStatus(id, b.getAttribute('data-status')); });
+  });
+  bindField('noteArea', id, 'note');
+  bindField('contactInput', id, 'contactName');
+  bindField('followInput', id, 'followUp');
+  var del = document.getElementById('delStop');
+  if(del) del.addEventListener('click', function(){ deleteStop(id); });
+
+  showSheet('sheet');
+}
+function bindField(elId, stopId, key){
+  var el = document.getElementById(elId); if(!el) return;
+  var handler = function(e){
+    state.log[stopId] = state.log[stopId] || {status:'pending'};
+    state.log[stopId][key] = e.target.value;
+    saveLog();
+    if(key==='followUp'){ renderProgress(); renderList(); }
+  };
+  el.addEventListener('change', handler);
+}
+function rowHtml(ic, valHtml){
+  return '<div class="sheet-row"><span class="ic">'+ic+'</span><span class="val">'+valHtml+'</span></div>';
+}
+function statusBtnHtml(key, current){
+  return '<div class="status-btn sel-'+key+(current===key?' selected':'')+'" data-status="'+key+'">'+STATUS_LABELS[key]+'</div>';
+}
+function setStatus(id, status){
+  var prev = statusOf(id);
+  state.log[id] = state.log[id] || {status:'pending'};
+  state.log[id].status = status;
+  state.log[id].ts = Date.now();
+  saveLog();
+  var stop = stopById(id);
+  refreshAllMarkers(); renderProgress(); renderNextBar(); renderList();
+  // re-render selection in open sheet
+  Array.prototype.forEach.call(document.querySelectorAll('#sheet .status-btn'), function(b){
+    b.classList.toggle('selected', b.getAttribute('data-status')===status);
+  });
+  if(status!==prev){
+    if(navigator.vibrate) try{ navigator.vibrate(15); }catch(e){}
+    toast(STATUS_LABELS[status].replace('✓','')+' · '+stop.name.split(/[—·(]/)[0].trim(), 'Deshacer', function(){
+      state.log[id].status = prev; saveLog();
+      refreshAllMarkers(); renderProgress(); renderNextBar(); renderList();
+      if(state.activeStopId===id) openSheet(id);
+    });
+  }
+}
+
+function showSheet(which){
+  closeSheets(true);
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById(which).classList.add('show');
+}
+function closeSheets(keepOverlay){
+  if(!keepOverlay) document.getElementById('overlay').classList.remove('show');
+  ['sheet','statsSheet','addSheet','legendSheet'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+}
+
+/* ============================================================
+   STATS + EXPORT
+   ============================================================ */
+function openStats(){
+  var c = counts(); var total = STOPS.length;
+  var done = c.visited + c.contacted + c.skipped;
+  var pct = total ? Math.round((c.visited+c.contacted)/total*100) : 0;
+  var convBase = c.visited + c.contacted;
+  var conv = convBase ? Math.round(c.contacted/convBase*100) : 0;
+  var fups = STOPS.filter(function(s){ return followOf(s.id); });
+
+  var mins = Math.round((Date.now() - (+state.dayStart))/60000);
+  var timeStr = mins < 60 ? mins+' min' : Math.floor(mins/60)+'h '+(mins%60)+'m';
+
+  var seg = function(w,col){ return '<div style="width:'+w+'%;height:100%;background:'+col+'"></div>'; };
+  var mini = seg(c.contacted/total*100, STATUS_COLORS.contacted)+seg(c.visited/total*100, STATUS_COLORS.visited)+seg(c.skipped/total*100, STATUS_COLORS.skipped);
+
+  var bd = function(col,label,val){ return '<div class="bd-row"><span class="bd-dot" style="background:'+col+'"></span>'+label+'<span class="bd-val">'+val+'</span></div>'; };
+
+  var fupHtml = '';
+  if(fups.length){
+    fupHtml = '<div class="legend-title">Para volver a contactar</div>';
+    fups.forEach(function(s){
+      fupHtml += '<div class="bd-row" data-goid="'+s.id+'" style="cursor:pointer"><span class="bd-dot" style="background:'+STATUS_COLORS[statusOf(s.id)]+'"></span>'+esc(s.name.split(/[—·(]/)[0].trim())+'<span class="bd-val">'+esc(followOf(s.id))+'</span></div>';
+    });
+  }
+
+  document.getElementById('statsBody').innerHTML =
+    '<div class="sheet-title">Resumen del día</div>'+
+    '<div class="stat-grid">'+
+      '<div class="stat-card"><div class="stat-num">'+c.contacted+'</div><div class="stat-lbl">Contactos hechos</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+(c.visited+c.contacted)+'/'+total+'</div><div class="stat-lbl">Visitados ('+pct+'%)</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+conv+'%</div><div class="stat-lbl">Conversión de visitas</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+timeStr+'</div><div class="stat-lbl">En la calle</div></div>'+
+      '<div class="stat-card stat-full"><div class="stat-lbl" style="margin:0 0 2px">Avance</div><div class="mini-track">'+mini+'</div></div>'+
+    '</div>'+
+    '<div class="breakdown">'+
+      bd(STATUS_COLORS.contacted,'Contacto hecho',c.contacted)+
+      bd(STATUS_COLORS.visited,'Visitado (sin contacto)',c.visited)+
+      bd(STATUS_COLORS.skipped,'Salteado',c.skipped)+
+      bd(STATUS_COLORS.pending,'Pendiente',c.pending)+
+    '</div>'+
+    fupHtml+
+    '<div class="export-row">'+
+      '<button class="action-btn action-primary" id="copyResumen">📋 Copiar resumen</button>'+
+      '<button class="action-btn action-secondary" id="downloadCsv">⬇︎ Descargar CSV</button>'+
+    '</div>'+
+    '<span class="danger-link" id="resetDay">Reiniciar progreso del día</span>';
+
+  Array.prototype.forEach.call(document.querySelectorAll('#statsBody [data-goid]'), function(r){
+    r.addEventListener('click', function(){ openSheet(+r.getAttribute('data-goid')); });
+  });
+  document.getElementById('copyResumen').addEventListener('click', copyResumen);
+  document.getElementById('downloadCsv').addEventListener('click', downloadCsv);
+  document.getElementById('resetDay').addEventListener('click', resetDay);
+  showSheet('statsSheet');
+}
+function resumenText(){
+  var c = counts();
+  var lines = ['atrıo · Ruta comercial '+todayISO(), '',
+    '✅ Contactos: '+c.contacted+' · 👀 Visitados: '+(c.visited+c.contacted)+'/'+STOPS.length+' · ⏭ Salteados: '+c.skipped, ''];
+  var withStatus = STOPS.filter(function(s){ return statusOf(s.id)!=='pending' || noteOf(s.id) || followOf(s.id); });
+  withStatus.forEach(function(s){
+    var parts = ['• '+STATUS_LABELS[statusOf(s.id)].replace('✓','').trim()+' — '+s.name.split(/[—·(]/)[0].trim()];
+    if(contactOf(s.id)) parts.push('('+contactOf(s.id)+')');
+    if(followOf(s.id)) parts.push('↻ '+followOf(s.id));
+    var l = parts.join(' ');
+    if(noteOf(s.id)) l += '\n   ↳ '+noteOf(s.id);
+    lines.push(l);
+  });
+  return lines.join('\n');
+}
+function copyResumen(){
+  var t = resumenText();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ toast('Resumen copiado al portapapeles'); }, function(){ fallbackCopy(t); });
+  } else fallbackCopy(t);
+}
+function fallbackCopy(t){
+  var ta = document.createElement('textarea'); ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast('Resumen copiado'); }catch(e){ toast('No se pudo copiar'); }
+  document.body.removeChild(ta);
+}
+function downloadCsv(){
+  var head = ['id','nombre','rubro','direccion','tramo','prioridad','estado','contacto','volver_a_contactar','nota','telefono','rating'];
+  var rows = [head.join(',')];
+  STOPS.forEach(function(s){
+    var row = [s.id, s.name, s.category, s.address, s.tramo, s.priority, STATUS_LABELS[statusOf(s.id)].replace('✓','').trim(),
+      contactOf(s.id), followOf(s.id), noteOf(s.id), s.phoneRaw||'', s.rating||''];
+    rows.push(row.map(function(v){ v=String(v==null?'':v).replace(/"/g,'""'); return /[",\n]/.test(v)?'"'+v+'"':v; }).join(','));
+  });
+  var blob = new Blob(['﻿'+rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'atrio-ruta-'+todayISO()+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  toast('CSV descargado');
+}
+function resetDay(){
+  if(!window.confirm('¿Reiniciar el progreso del día? Se borran estados, notas y seguimientos (los comercios agregados quedan).')) return;
+  state.log = {}; saveLog();
+  state.dayStart = String(Date.now()); lsSet(LS.day, state.dayStart);
+  refreshAllMarkers(); renderProgress(); renderNextBar(); renderList(); closeSheets();
+  toast('Progreso reiniciado');
+}
+
+/* ============================================================
+   ADD STOP (nuevo comercio en la calle)
+   ============================================================ */
+var pendingLatLng = null;
+function startAddMode(){
+  state.addMode = true;
+  if(state.view!=='map') setView('map');
+  document.getElementById('addHint').style.display = 'flex';
+  document.getElementById('addBtn').classList.add('on');
+  closeSheets();
+}
+function stopAddMode(){
+  state.addMode = false;
+  document.getElementById('addHint').style.display = 'none';
+  document.getElementById('addBtn').classList.remove('on');
+}
+function placeNewStop(latlng){
+  pendingLatLng = latlng;
+  stopAddMode();
+  document.getElementById('addBody').innerHTML =
+    '<div class="sheet-title">Nuevo comercio</div>'+
+    '<div class="note-label">Nombre *</div><input class="field-input" id="newName" placeholder="Ej: Panadería La Esquina" />'+
+    '<div class="two-col"><div><div class="note-label">Rubro</div><input class="field-input" id="newCat" placeholder="Rubro" /></div>'+
+    '<div><div class="note-label">Prioridad</div>'+
+      '<select class="field-input" id="newPrio"><option value="3">★★★ Alta</option><option value="2" selected>★★ Media</option><option value="1">★ Baja</option></select></div></div>'+
+    '<div class="note-label">Dirección</div><input class="field-input" id="newAddr" placeholder="Calle y altura" />'+
+    '<div class="two-col"><div><div class="note-label">Teléfono</div><input class="field-input" id="newPhone" placeholder="Opcional" /></div>'+
+    '<div><div class="note-label">Estado web</div>'+
+      '<select class="field-input" id="newWeb"><option value="none">No tiene</option><option value="social">Solo redes</option><option value="broken">Rota</option><option value="outdated">Vieja</option><option value="unknown">A verificar</option></select></div></div>'+
+    '<div class="note-label">Nota</div><textarea class="note-area" id="newNote" rows="2" placeholder="Detalle…"></textarea>'+
+    '<div class="action-row" style="margin-top:16px"><button class="action-btn action-secondary" id="newCancel2">Cancelar</button><button class="action-btn action-primary" id="newSave">Guardar comercio</button></div>';
+  document.getElementById('newSave').addEventListener('click', saveNewStop);
+  document.getElementById('newCancel2').addEventListener('click', closeSheets);
+  showSheet('addSheet');
+  setTimeout(function(){ var n=document.getElementById('newName'); if(n) n.focus(); }, 300);
+}
+function saveNewStop(){
+  var name = document.getElementById('newName').value.trim();
+  if(!name){ toast('Poné al menos el nombre'); return; }
+  var webMap = {none:'No tiene', social:'Solo redes', broken:'Rota', outdated:'Web vieja', unknown:'A verificar in situ'};
+  var wk = document.getElementById('newWeb').value;
+  var stop = {
+    id: 1000 + (state.custom.reduce(function(m,s){ return Math.max(m, s.id-1000+1); }, 1)),
+    tramo:4, custom:true,
+    priority:+document.getElementById('newPrio').value,
+    name:name, category:document.getElementById('newCat').value.trim() || 'Sin rubro',
+    address:document.getElementById('newAddr').value.trim() || 'Cargado en el mapa',
+    phoneRaw:document.getElementById('newPhone').value.trim() || null, email:null,
+    lat:pendingLatLng.lat, lng:pendingLatLng.lng, placeId:null, rating:null, reviews:null,
+    web:webMap[wk], webKind:wk, hook:'', tip:'', opensAt:null, closesAt:null
+  };
+  var note = document.getElementById('newNote').value.trim();
+  state.custom.push(stop); saveCustom();
+  STOPS = SEED_STOPS.concat(state.custom);
+  if(note){ state.log[stop.id] = {status:'pending', note:note}; saveLog(); }
+  rebuildMarkers(); renderProgress(); renderNextBar(); renderList();
+  closeSheets();
+  toast('Comercio agregado');
+  setTimeout(function(){ openSheet(stop.id); panTo(stop); }, 250);
+}
+function deleteStop(id){
+  if(!window.confirm('¿Eliminar este comercio agregado?')) return;
+  state.custom = state.custom.filter(function(s){ return s.id!==id; }); saveCustom();
+  delete state.log[id]; saveLog();
+  STOPS = SEED_STOPS.concat(state.custom);
+  rebuildMarkers(); renderProgress(); renderNextBar(); renderList(); closeSheets();
+  toast('Comercio eliminado');
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(t){
+  if(t) document.documentElement.setAttribute('data-theme', t);
+  else document.documentElement.removeAttribute('data-theme');
+  // refresh CSS-derived colors
+  STATUS_COLORS = {pending:getCss('--st-pending'), visited:getCss('--st-visited'), contacted:getCss('--st-contacted'), skipped:getCss('--st-skipped')};
+  if(map){ refreshTiles(); refreshAllMarkers(); }
+}
+function toggleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var next;
+  if(!cur) next = sysDark ? 'light' : 'dark';
+  else next = cur==='dark' ? 'light' : 'dark';
+  state.theme = next; lsSet(LS.theme, next); applyTheme(next);
+  if(state.view==='map') renderList(); else renderList();
+}
+
+/* ============================================================
+   VIEW / SORT / CLOCK / TOAST
+   ============================================================ */
+function setView(v){
+  state.view = v;
+  document.getElementById('map').style.display = v==='map' ? '' : 'none';
+  document.getElementById('listView').style.display = v==='list' ? 'block' : 'none';
+  ['fitBtn','locateBtn','addBtn'].forEach(function(id){ document.getElementById(id).style.display = v==='map' ? 'flex' : 'none'; });
+  document.getElementById('viewToggle').textContent = v==='map' ? '☰' : '🗺';
+  document.getElementById('viewToggle').title = v==='map' ? 'Ver lista' : 'Ver mapa';
+  if(v==='list') renderList();
+  if(v==='map') setTimeout(function(){ map.invalidateSize(); }, 50);
+}
+function tickClock(){
+  var d = new Date();
+  document.getElementById('clockNow').textContent = pad2(d.getHours())+':'+pad2(d.getMinutes());
+}
+var toastTimer = null;
+function toast(msg, actionLabel, actionFn){
+  var t = document.getElementById('toast'), m = document.getElementById('toastMsg'), b = document.getElementById('toastAction');
+  m.textContent = msg;
+  if(actionLabel){ b.textContent = actionLabel; b.style.display=''; b.onclick = function(){ hideToast(); if(actionFn) actionFn(); }; }
+  else{ b.style.display='none'; b.onclick=null; }
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, actionLabel?4200:2200);
+}
+function hideToast(){ document.getElementById('toast').classList.remove('show'); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  loadAll();
+  applyTheme(state.theme);
+  document.getElementById('brandSub').textContent = 'Ruta comercial · ' + new Date().toLocaleDateString('es-AR',{day:'numeric',month:'short'});
+
+  initMap();
+  renderProgress(); renderNextBar(); renderList();
+  tickClock();
+  setInterval(tickClock, 30000);
+  setInterval(function(){ refreshAllMarkers(); renderNextBar(); }, 60000);
+
+  // header actions
+  document.getElementById('viewToggle').addEventListener('click', function(){ setView(state.view==='map'?'list':'map'); });
+  document.getElementById('legendBtn').addEventListener('click', function(){ showSheet('legendSheet'); });
+  document.getElementById('statsBtn').addEventListener('click', openStats);
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('overlay').addEventListener('click', function(){ closeSheets(); });
+  Array.prototype.forEach.call(document.querySelectorAll('.sheet-close'), function(btn){ btn.addEventListener('click', function(){ closeSheets(); }); });
+
+  // map fabs
+  document.getElementById('fitBtn').addEventListener('click', fitAll);
+  document.getElementById('locateBtn').addEventListener('click', function(){ tryGeolocation(false); });
+  document.getElementById('geoBtn').addEventListener('click', function(){ tryGeolocation(false); });
+  document.getElementById('addBtn').addEventListener('click', function(){ if(state.addMode) stopAddMode(); else startAddMode(); });
+  document.getElementById('addCancel').addEventListener('click', stopAddMode);
+
+  // search
+  var si = document.getElementById('searchInput'), sc = document.getElementById('searchClear');
+  si.addEventListener('input', function(){
+    state.search = si.value.trim();
+    sc.style.display = state.search ? 'block' : 'none';
+    applyFilterToMap(); renderList();
+  });
+  sc.addEventListener('click', function(){ si.value=''; state.search=''; sc.style.display='none'; applyFilterToMap(); renderList(); });
+
+  // filter chips
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function(chip){
+    chip.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.chip'), function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      state.filter = chip.getAttribute('data-filter');
+      // useful sort defaults
+      if(state.filter==='pending') state.sort = state.userLatLng ? 'near' : 'route';
+      applyFilterToMap(); renderList();
+    });
+  });
+
+  // deep-link #stop-N
+  function handleHash(){
+    var m = /stop-(\d+)/.exec(location.hash);
+    if(m){ var id=+m[1]; if(stopById(id)){ openSheet(id); if(state.view==='map') panTo(stopById(id)); } }
+  }
+  window.addEventListener('hashchange', handleHash);
+
+  showGeoBanner(true, 'Activá tu ubicación para ver distancias y guiarte.');
+  tryGeolocation(true);
+  handleHash();
+
+  // service worker (offline)
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+}
+
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); }
+else{ init(); }
+
+})();
+</script>
+</body>
+</html>

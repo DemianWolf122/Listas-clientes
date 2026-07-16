@@ -1,0 +1,15 @@
+{
+  "name": "atrıo · Ruta comercial MDP",
+  "short_name": "atrıo Ruta",
+  "description": "Mapa de campo para prospección de clientes de atrıo en el centro de Mar del Plata.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F1EB",
+  "theme_color": "#5C7A56",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
