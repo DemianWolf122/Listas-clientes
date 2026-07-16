@@ -10,6 +10,8 @@ todo el progreso vive en el dispositivo (`localStorage`) y funciona **sin señal
 ## Qué cambió respecto a la versión anterior
 - **Bug crítico de persistencia arreglado.** La versión previa guardaba con `window.storage`
   (API de artifacts de Claude) que **no existe en Vercel** → el progreso se perdía. Ahora usa `localStorage`.
+- **Instalable + offline.** Un service worker cachea la app, Leaflet y los tiles ya vistos,
+  así sigue andando con señal pobre en la calle una vez cargado.
 - **Buscador** por nombre / rubro / dirección.
 - **Próxima parada inteligente:** si hay ubicación, sugiere el pendiente **más cercano** (no el siguiente por número).
 - **Mensajes de venta pre-cargados** por WhatsApp y mail, redactados según el estado web del comercio
@@ -19,7 +21,6 @@ todo el progreso vive en el dispositivo (`localStorage`) y funciona **sin señal
   **export** a portapapeles y **CSV**.
 - **Agregar comercios en la calle:** botón ＋ → tocás el mapa → cargás un lead nuevo (queda guardado).
 - **Modo oscuro** (mapa incluido) + respeta el tema del sistema.
-- **PWA instalable + offline** (service worker cachea app, Leaflet, fuentes y tiles ya vistos).
 - **Deshacer** al cambiar un estado, vibración, toasts, deep-links (`#stop-7` abre esa ficha).
 - Filtros ampliados (Pendientes, ★★★, A seguir, por Tramo, Contactados) y orden por cercanía/prioridad.
 
@@ -30,7 +31,7 @@ Sitio estático. **Root Directory = `mapa-atrio`.**
 2. **CLI:** `cd mapa-atrio && vercel --prod`.
 
 ## Archivos
-- `index.html` — la app completa (Leaflet + CARTO tiles).
+- `index.html` — la app completa (Leaflet vía cdnjs + tiles CARTO).
 - `manifest.webmanifest`, `icon.svg`, `sw.js` — PWA / offline.
 - `vercel.json` — headers de caché (evita servir un SW viejo).
 
