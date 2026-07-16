@@ -44,6 +44,12 @@ Sitio estático. **Root Directory = `mapa-atrio`.**
 - `manifest.webmanifest`, `icon.svg`, `sw.js` — PWA / offline.
 - `vercel.json` — headers de caché (evita servir un SW viejo).
 
+## CRM de campo
+- **Resultado de la visita** por comercio (habló c/ dueño · no estaba · pidió presupuesto · interesado · no interesado · cerró) → alimenta un **embudo** en el resumen y el CSV.
+- **Foto de fachada** por parada (se sube a Supabase Storage y queda en la ficha).
+- **Búsqueda por voz** en el buscador.
+- Responsive robusto (grid con `minmax(0,1fr)`, sin desborde horizontal) de 320px a desktop.
+
 ## Kit de venta por comercio
 - **Speech personalizado** por cada comercio, compuesto según rubro, estado web y reputación (reseñas/rating), con el producto de atrıo que le encaja.
 - **📋 Copiar · 🔊 Leer en voz alta (TTS) · 🖥 Modo presentación** (pantalla completa para leerle/mostrarle al cliente).
