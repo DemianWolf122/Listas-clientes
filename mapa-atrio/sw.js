@@ -1,7 +1,7 @@
 /* atrıo · Ruta comercial — service worker
    App-shell precache + runtime caching de Leaflet, fuentes y tiles del mapa,
    para que la herramienta siga funcionando con señal pobre en la calle. */
-var VERSION = 'atrio-ruta-v1';
+var VERSION = 'atrio-ruta-v2';
 var SHELL = [
   './',
   './index.html',
@@ -44,6 +44,9 @@ self.addEventListener('fetch', function(e){
     }));
     return;
   }
+
+  // Cross-origin no-asset (p.ej. la API REST de Supabase): no interceptar.
+  if(url.origin !== location.origin) return;
 
   // app shell / same-origin: cache-first, fall back to network then to index
   e.respondWith(caches.match(req).then(function(cached){
