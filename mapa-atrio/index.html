@@ -89,6 +89,26 @@
   .brand{ display:flex; flex-direction:column; line-height:1; }
   .brand .word{ font-family:'Instrument Serif', serif; font-style:italic; font-size:21px; letter-spacing:0.2px; color:var(--ink); }
   .brand .sub{ font-size:10.5px; color:var(--ink-soft); letter-spacing:0.4px; margin-top:2px; text-transform:uppercase; }
+  .route-switch{ display:inline-flex; align-items:center; gap:4px; margin-top:3px; padding:2px 0; background:none; border:none; font-family:inherit; font-size:11px; color:var(--ink-soft); letter-spacing:0.3px; text-transform:uppercase; cursor:pointer; max-width:64vw; }
+  .route-switch #routeName{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rs-caret{ font-size:9px; opacity:.7; }
+  .sync-dot{ width:7px; height:7px; border-radius:50%; background:transparent; margin-left:2px; transition:background .2s; }
+  .sync-dot.on{ background:var(--amber); animation:pulseSync 1s ease-in-out infinite; }
+  @keyframes pulseSync{ 0%,100%{ opacity:.35 } 50%{ opacity:1 } }
+  .vendedor-row{ font-size:12.5px; color:var(--ink-soft); margin:6px 0 14px; }
+  .vendedor-row b{ color:var(--ink); }
+  .vend-edit{ color:var(--sage-deep); font-weight:600; cursor:pointer; margin-left:6px; }
+  .route-item{ display:flex; align-items:center; gap:11px; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:8px; cursor:pointer; transition:transform .08s ease; }
+  .route-item:active{ transform:scale(.99); }
+  .route-item.active{ border-color:var(--sage-dark); background:rgba(92,122,86,.08); }
+  .route-swatch{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.25); }
+  .route-meta{ flex:1 1 auto; min-width:0; }
+  .route-nom{ font-size:14.5px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .route-sub{ font-size:11.5px; color:var(--ink-soft); }
+  .route-check{ color:var(--sage-dark); font-weight:700; }
+  .new-route{ text-align:center; padding:11px; border:1.5px dashed var(--line); border-radius:12px; color:var(--sage-deep); font-weight:600; font-size:13.5px; cursor:pointer; margin-top:4px; }
+  .new-route:active{ background:var(--cream-2); }
+  .new-route-hint{ font-size:11.5px; color:var(--ink-faint); line-height:1.5; margin:10px 2px 0; }
   .head-actions{ display:flex; gap:6px; align-items:center; }
   .icon-btn{
     width:36px; height:36px; border-radius:11px; border:1px solid var(--line);
@@ -334,7 +354,9 @@
 <header>
   <div class="brand">
     <div class="word">atrıo</div>
-    <div class="sub" id="brandSub">Ruta comercial · Centro MDP</div>
+    <button class="route-switch" id="routeSwitch" aria-label="Cambiar ruta">
+      <span id="routeName">Ruta…</span><span class="rs-caret">▾</span><span class="sync-dot" id="syncDot" title="Sincronizando…"></span>
+    </button>
   </div>
   <div class="head-actions">
     <div class="icon-btn" id="statsBtn" title="Resumen del día" aria-label="Resumen">📊</div>
@@ -419,6 +441,12 @@
   <span class="sheet-close" data-close="1">✕</span>
   <div class="sheet-handle"></div>
   <div class="sheet-body" id="addBody"></div>
+</div>
+
+<div class="sheet" id="routesSheet">
+  <span class="sheet-close" data-close="1">✕</span>
+  <div class="sheet-handle"></div>
+  <div class="sheet-body" id="routesBody"></div>
 </div>
 
 <div class="sheet" id="legendSheet">
@@ -545,8 +573,12 @@ function getCss(v){ return getComputedStyle(document.documentElement).getPropert
    STATE
    ============================================================ */
 var state = {
-  log: {},
-  custom: [],
+  log: {},              // {numero: {status, note, followUp, contactName, ts}} de la ruta activa
+  routes: [],           // lista de rutas
+  routeId: null,        // ruta activa
+  vendedor: 'equipo',   // nombre del vendedor (progreso por persona)
+  online: (typeof navigator!=='undefined' && 'onLine' in navigator) ? navigator.onLine : true,
+  syncing: false,
   filter: 'all',
   search: '',
   view: 'map',
@@ -557,6 +589,7 @@ var state = {
   addMode: false,
   dayStart: null
 };
+var pidByNum = {};      // numero -> parada_id (uuid) de la ruta activa
 
 function statusOf(id){ return (state.log[id] && state.log[id].status) || 'pending'; }
 function noteOf(id){ return (state.log[id] && state.log[id].note) || ''; }
@@ -567,21 +600,173 @@ function stopById(id){ for(var i=0;i<STOPS.length;i++){ if(STOPS[i].id===id) ret
 /* ============================================================
    STORAGE — localStorage (con fallback al storage de artifacts)
    ============================================================ */
-var LS = { log:'atrio-map-log', custom:'atrio-map-custom', theme:'atrio-map-theme', day:'atrio-map-daystart' };
+/* --- Supabase (proyecto Wepairr · schema aislado atrio_rutas) --- */
+var SB = {
+  url:'https://wjxekfxyxrfvmsfbqvsj.supabase.co',
+  key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqeGVrZnh5eHJmdm1zZmJxdnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NjE3NTQsImV4cCI6MjA4NzQzNzc1NH0.sP6iaceCWaKvCFgVMlosJ7pYTfa38oa_2AqmFzSdaDo',
+  schema:'atrio_rutas'
+};
+var SEED_ROUTE = { id:'a1a1a1a1-0000-4000-8000-000000000001', nombre:'Ruta comercial Centro Mar del Plata 1', ciudad:'Mar del Plata', color:'#5C7A56', orden:1 };
+var ROUTE_COLORS = ['#5C7A56','#3E6FA6','#C68A3C','#8C5A9B','#B0553F','#3F8C82'];
+
+function sbHeaders(extra){
+  var h = { apikey:SB.key, Authorization:'Bearer '+SB.key, 'Accept-Profile':SB.schema, 'Content-Profile':SB.schema, 'Content-Type':'application/json' };
+  if(extra) for(var k in extra) h[k]=extra[k];
+  return h;
+}
+function sbFetch(path, opts){
+  opts = opts || {}; opts.headers = sbHeaders(opts.headers);
+  return fetch(SB.url+'/rest/v1/'+path, opts).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+' '+t.slice(0,120)); });
+    return (opts.method==='DELETE') ? true : r.json();
+  });
+}
+function sbGet(path){ return sbFetch(path); }
+function sbInsert(table, rows){ return sbFetch(table, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(rows)}); }
+function sbUpsert(table, rows, onConflict){ return sbFetch(table+'?on_conflict='+onConflict, {method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=representation'}, body:JSON.stringify(rows)}); }
+function sbPatch(table, query, patch){ return sbFetch(table+'?'+query, {method:'PATCH', headers:{Prefer:'return=representation'}, body:JSON.stringify(patch)}); }
+function sbDelete(table, query){ return sbFetch(table+'?'+query, {method:'DELETE'}); }
+
+/* --- localStorage (offline-first) --- */
+var LS = { routes:'atrio-routes', routeId:'atrio-routeId', vendedor:'atrio-vendedor', theme:'atrio-map-theme', queue:'atrio-queue' };
 function lsGet(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ window.localStorage.setItem(k,v); }catch(e){} }
-
-function loadAll(){
-  try{ state.log = JSON.parse(lsGet(LS.log)) || {}; }catch(e){ state.log = {}; }
-  try{ state.custom = JSON.parse(lsGet(LS.custom)) || []; }catch(e){ state.custom = []; }
-  state.theme = lsGet(LS.theme);
-  state.dayStart = lsGet(LS.day);
-  if(!state.dayStart){ state.dayStart = String(startOfToday()); lsSet(LS.day, state.dayStart); }
-  STOPS = SEED_STOPS.concat(state.custom);
-}
-function saveLog(){ lsSet(LS.log, JSON.stringify(state.log)); }
-function saveCustom(){ lsSet(LS.custom, JSON.stringify(state.custom)); }
+function lsJSON(k, def){ try{ var v=JSON.parse(lsGet(k)); return v==null?def:v; }catch(e){ return def; } }
+function kStops(rid){ return 'atrio-stops-'+rid; }
+function kLog(rid){ return 'atrio-log-'+rid; }
+function kDay(rid){ return 'atrio-day-'+rid; }
+function saveLog(){ if(state.routeId) lsSet(kLog(state.routeId), JSON.stringify(state.log)); }
+function saveStopsCache(){ if(state.routeId) lsSet(kStops(state.routeId), JSON.stringify(STOPS)); }
+function saveRoutesCache(){ lsSet(LS.routes, JSON.stringify(state.routes)); }
 function startOfToday(){ var d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function activeRoute(){ for(var i=0;i<state.routes.length;i++){ if(state.routes[i].id===state.routeId) return state.routes[i]; } return null; }
+function pickColor(){ return ROUTE_COLORS[state.routes.length % ROUTE_COLORS.length]; }
+
+/* --- mapping DB <-> app --- */
+function mapRow(row){
+  return { pid:row.id, id:row.numero, tramo:row.tramo||1, priority:row.prioridad||2,
+    name:row.nombre, category:row.rubro||'', address:row.direccion||'', phoneRaw:row.telefono||null,
+    email:row.email||null, lat:row.lat, lng:row.lng, placeId:row.place_id||null,
+    rating:(row.rating!=null?Number(row.rating):null), reviews:row.reviews||null,
+    web:row.web||'', webKind:row.web_kind||'unknown', hook:row.hook||'', tip:row.tip||'',
+    opensAt:row.opens_at||null, closesAt:row.closes_at||null, custom:(row.fuente==='campo') };
+}
+function seedStops(){ return SEED_STOPS.map(function(s){ var o={}; for(var k in s) o[k]=s[k]; o.pid='seed:'+s.id; return o; }); }
+function setStops(list){ STOPS = list; pidByNum = {}; list.forEach(function(s){ pidByNum[s.id] = s.pid; }); }
+
+/* --- cola de escritura offline --- */
+function queueGet(){ return lsJSON(LS.queue, []); }
+function queueSet(q){ lsSet(LS.queue, JSON.stringify(q)); }
+function queuePush(op){ var q=queueGet(); q.push(op); queueSet(q); }
+function visitRow(pid, l){ return { parada_id:pid, vendedor:state.vendedor, estado:l.status||'pending', nota:l.note||null, contacto:l.contactName||null, volver_a_contactar:l.followUp||null }; }
+function runOp(op){
+  if(op.t==='visit'){ var pid=op.pid||pidByNum[op.num]; if(!pid||String(pid).indexOf('seed:')===0||String(pid).indexOf('tmp:')===0) return Promise.reject(new Error('no pid')); return sbUpsert('visitas', visitRow(pid, op.row), 'parada_id,vendedor'); }
+  if(op.t==='stop'){ return sbInsert('paradas', op.row); }
+  if(op.t==='route'){ return sbInsert('rutas', op.row); }
+  return Promise.resolve();
+}
+function flushQueue(){
+  if(!state.online) return Promise.resolve();
+  var q = queueGet(); if(!q.length) return Promise.resolve();
+  var rest = [];
+  return q.reduce(function(p, op){ return p.then(function(){ return runOp(op).catch(function(){ rest.push(op); }); }); }, Promise.resolve())
+    .then(function(){ queueSet(rest); });
+}
+function pushVisit(num){
+  var l = state.log[num] || {status:'pending'};
+  var row = { status:l.status, note:l.note, contactName:l.contactName, followUp:l.followUp };
+  var pid = pidByNum[num];
+  if(!pid || String(pid).indexOf('seed:')===0 || String(pid).indexOf('tmp:')===0 || !state.online){ queuePush({t:'visit', num:num, row:row}); if(state.online) flushQueue(); return; }
+  setSync(true);
+  sbUpsert('visitas', visitRow(pid, row), 'parada_id,vendedor').then(function(){ setSync(false); }).catch(function(){ setSync(false); queuePush({t:'visit', num:num, row:row}); });
+}
+
+/* --- carga de rutas y ruta activa --- */
+function fetchRoutes(){ return sbGet('rutas?select=*&archivada=is.false&order=orden.asc,created_at.asc').then(function(rows){ if(rows&&rows.length){ state.routes = rows; saveRoutesCache(); } return rows; }); }
+function fetchStops(routeId){ return sbGet('paradas?select=*&archivada=is.false&ruta_id=eq.'+routeId+'&order=numero.asc').then(function(rows){ return rows.map(mapRow); }); }
+function fetchVisits(){
+  var ids = STOPS.map(function(s){ return s.pid; }).filter(function(p){ return p && String(p).indexOf('seed:')!==0 && String(p).indexOf('tmp:')!==0; });
+  if(!ids.length) return Promise.resolve(null);
+  return sbGet('visitas?select=*&vendedor=eq.'+encodeURIComponent(state.vendedor)+'&parada_id=in.('+ids.join(',')+')').then(function(rows){
+    var numByPid = {}; STOPS.forEach(function(s){ numByPid[s.pid]=s.id; });
+    var log = {}; rows.forEach(function(v){ var num=numByPid[v.parada_id]; if(num==null) return; log[num] = { status:v.estado||'pending', note:v.nota||'', contactName:v.contacto||'', followUp:v.volver_a_contactar||'', ts:0 }; });
+    return log;
+  });
+}
+function mergeLogs(server, local){ var out={}; var k; for(k in server) out[k]=server[k]; for(k in local) out[k]=local[k]; return out; }
+
+/* --- boot local (instantáneo, offline) --- */
+function bootLocal(){
+  state.theme = lsGet(LS.theme);
+  state.vendedor = lsGet(LS.vendedor) || 'equipo';
+  state.routes = lsJSON(LS.routes, []);
+  if(!state.routes.length) state.routes = [SEED_ROUTE];
+  state.routeId = lsGet(LS.routeId) || state.routes[0].id;
+  if(!state.routes.some(function(r){ return r.id===state.routeId; })) state.routeId = state.routes[0].id;
+  loadRouteFromCache(state.routeId);
+}
+function loadRouteFromCache(rid){
+  state.routeId = rid; lsSet(LS.routeId, rid);
+  var cached = lsJSON(kStops(rid), null);
+  if(cached && cached.length){ setStops(cached); }
+  else if(rid === SEED_ROUTE.id){ setStops(seedStops()); saveStopsCache(); }
+  else { setStops([]); }
+  state.log = lsJSON(kLog(rid), {});
+  state.dayStart = lsGet(kDay(rid)); if(!state.dayStart){ state.dayStart=String(startOfToday()); lsSet(kDay(rid), state.dayStart); }
+}
+
+/* --- sync con el servidor --- */
+function syncActiveRoute(){
+  if(!state.online) return Promise.resolve();
+  setSync(true);
+  return fetchStops(state.routeId).then(function(stops){
+    if(stops && stops.length){ setStops(stops); saveStopsCache(); rebuildMarkers(); }
+    return fetchVisits();
+  }).then(function(log){
+    if(log){ state.log = mergeLogs(log, state.log); saveLog(); }
+    refreshAllMarkers(); renderProgress(); renderNextBar(); renderList(); setSync(false);
+  }).catch(function(){ setSync(false); });
+}
+function syncFromServer(){
+  if(!state.online) return;
+  setSync(true);
+  flushQueue().then(fetchRoutes).then(function(){
+    if(!activeRoute() && state.routes[0]) state.routeId = state.routes[0].id;
+    renderRouteName(); renderRoutesSheet();
+    return syncActiveRoute();
+  }).catch(function(){ setSync(false); });
+}
+function switchRoute(rid){
+  if(rid===state.routeId){ closeSheets(); return; }
+  saveLog();
+  loadRouteFromCache(rid);
+  state.filter='all'; state.search='';
+  renderRouteName(); rebuildMarkers(); renderProgress(); renderNextBar(); renderList();
+  closeSheets(); setTimeout(fitAll, 60);
+  syncActiveRoute();
+}
+function doCreateRoute(nombre, desc){
+  if(!nombre) return;
+  var payload = { nombre:nombre, descripcion:desc||null, ciudad:'Mar del Plata', color:pickColor(), orden:state.routes.length+1 };
+  if(!state.online){ toast('Sin conexión — se crea al reconectar'); queuePush({t:'route', row:payload}); return; }
+  setSync(true);
+  sbInsert('rutas', payload).then(function(rows){ var r=rows[0]; state.routes.push(r); saveRoutesCache(); setSync(false); switchRoute(r.id); toast('Ruta creada ✓'); })
+    .catch(function(){ setSync(false); toast('No se pudo crear la ruta'); });
+}
+function persistNewStop(stop){
+  var row = { ruta_id:state.routeId, numero:stop.id, orden:stop.id, nombre:stop.name, rubro:stop.category, direccion:stop.address, lat:stop.lat, lng:stop.lng, telefono:stop.phoneRaw, email:stop.email, web:stop.web, web_kind:stop.webKind, prioridad:stop.priority, tramo:4, fuente:'campo' };
+  if(!state.online){ queuePush({t:'stop', row:row}); return; }
+  setSync(true);
+  sbInsert('paradas', row).then(function(rows){ var r=rows[0]; if(r){ stop.pid=r.id; pidByNum[stop.id]=r.id; saveStopsCache(); if(state.log[stop.id]) pushVisit(stop.id); } setSync(false); })
+    .catch(function(){ setSync(false); queuePush({t:'stop', row:row}); });
+}
+function setVendedor(name){
+  name = (name||'').trim() || 'equipo';
+  state.vendedor = name; lsSet(LS.vendedor, name);
+  state.log = {}; saveLog();
+  refreshAllMarkers(); renderProgress(); renderNextBar(); renderList();
+  syncActiveRoute();
+}
 
 /* ============================================================
    UTILITIES
@@ -964,7 +1149,7 @@ function bindField(elId, stopId, key){
   var handler = function(e){
     state.log[stopId] = state.log[stopId] || {status:'pending'};
     state.log[stopId][key] = e.target.value;
-    saveLog();
+    saveLog(); pushVisit(stopId);
     if(key==='followUp'){ renderProgress(); renderList(); }
   };
   el.addEventListener('change', handler);
@@ -980,7 +1165,7 @@ function setStatus(id, status){
   state.log[id] = state.log[id] || {status:'pending'};
   state.log[id].status = status;
   state.log[id].ts = Date.now();
-  saveLog();
+  saveLog(); pushVisit(id);
   var stop = stopById(id);
   refreshAllMarkers(); renderProgress(); renderNextBar(); renderList();
   // re-render selection in open sheet
@@ -990,7 +1175,7 @@ function setStatus(id, status){
   if(status!==prev){
     if(navigator.vibrate) try{ navigator.vibrate(15); }catch(e){}
     toast(STATUS_LABELS[status].replace('✓','')+' · '+stop.name.split(/[—·(]/)[0].trim(), 'Deshacer', function(){
-      state.log[id].status = prev; saveLog();
+      state.log[id].status = prev; saveLog(); pushVisit(id);
       refreshAllMarkers(); renderProgress(); renderNextBar(); renderList();
       if(state.activeStopId===id) openSheet(id);
     });
@@ -1004,7 +1189,7 @@ function showSheet(which){
 }
 function closeSheets(keepOverlay){
   if(!keepOverlay) document.getElementById('overlay').classList.remove('show');
-  ['sheet','statsSheet','addSheet','legendSheet'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+  ['sheet','statsSheet','addSheet','legendSheet','routesSheet'].forEach(function(id){ var e=document.getElementById(id); if(e) e.classList.remove('show'); });
 }
 
 /* ============================================================
@@ -1107,9 +1292,11 @@ function downloadCsv(){
   toast('CSV descargado');
 }
 function resetDay(){
-  if(!window.confirm('¿Reiniciar el progreso del día? Se borran estados, notas y seguimientos (los comercios agregados quedan).')) return;
+  if(!window.confirm('¿Reiniciar el progreso de esta ruta para vos? Se borran estados, notas y seguimientos (los comercios quedan).')) return;
   state.log = {}; saveLog();
-  state.dayStart = String(Date.now()); lsSet(LS.day, state.dayStart);
+  state.dayStart = String(Date.now()); lsSet(kDay(state.routeId), state.dayStart);
+  var ids = STOPS.map(function(s){ return s.pid; }).filter(function(p){ return p && String(p).indexOf('seed:')!==0 && String(p).indexOf('tmp:')!==0; });
+  if(state.online && ids.length){ sbDelete('visitas','vendedor=eq.'+encodeURIComponent(state.vendedor)+'&parada_id=in.('+ids.join(',')+')').catch(function(){}); }
   refreshAllMarkers(); renderProgress(); renderNextBar(); renderList(); closeSheets();
   toast('Progreso reiniciado');
 }
@@ -1155,8 +1342,9 @@ function saveNewStop(){
   if(!name){ toast('Poné al menos el nombre'); return; }
   var webMap = {none:'No tiene', social:'Solo redes', broken:'Rota', outdated:'Web vieja', unknown:'A verificar in situ'};
   var wk = document.getElementById('newWeb').value;
+  var num = STOPS.reduce(function(m,s){ return Math.max(m, s.id||0); }, 0) + 1;
   var stop = {
-    id: 1000 + (state.custom.reduce(function(m,s){ return Math.max(m, s.id-1000+1); }, 1)),
+    pid:'tmp:'+num+':'+Math.random().toString(36).slice(2,8), id:num,
     tramo:4, custom:true,
     priority:+document.getElementById('newPrio').value,
     name:name, category:document.getElementById('newCat').value.trim() || 'Sin rubro',
@@ -1166,19 +1354,22 @@ function saveNewStop(){
     web:webMap[wk], webKind:wk, hook:'', tip:'', opensAt:null, closesAt:null
   };
   var note = document.getElementById('newNote').value.trim();
-  state.custom.push(stop); saveCustom();
-  STOPS = SEED_STOPS.concat(state.custom);
-  if(note){ state.log[stop.id] = {status:'pending', note:note}; saveLog(); }
+  STOPS.push(stop); pidByNum[num] = stop.pid; saveStopsCache();
+  if(note){ state.log[num] = {status:'pending', note:note}; saveLog(); }
+  persistNewStop(stop);
   rebuildMarkers(); renderProgress(); renderNextBar(); renderList();
   closeSheets();
   toast('Comercio agregado');
-  setTimeout(function(){ openSheet(stop.id); panTo(stop); }, 250);
+  setTimeout(function(){ openSheet(num); panTo(stop); }, 250);
 }
 function deleteStop(id){
   if(!window.confirm('¿Eliminar este comercio agregado?')) return;
-  state.custom = state.custom.filter(function(s){ return s.id!==id; }); saveCustom();
+  var stop = stopById(id);
+  setStops(STOPS.filter(function(s){ return s.id!==id; })); saveStopsCache();
   delete state.log[id]; saveLog();
-  STOPS = SEED_STOPS.concat(state.custom);
+  if(stop && stop.pid && state.online && String(stop.pid).indexOf('tmp:')!==0 && String(stop.pid).indexOf('seed:')!==0){
+    sbPatch('paradas','id=eq.'+stop.pid, {archivada:true}).catch(function(){});
+  }
   rebuildMarkers(); renderProgress(); renderNextBar(); renderList(); closeSheets();
   toast('Comercio eliminado');
 }
@@ -1243,12 +1434,60 @@ function toast(msg, actionLabel, actionFn){
 function hideToast(){ document.getElementById('toast').classList.remove('show'); }
 
 /* ============================================================
+   RUTAS (selector · crear · vendedor · sync)
+   ============================================================ */
+function setSync(on){ state.syncing = !!on; var d=document.getElementById('syncDot'); if(d) d.classList.toggle('on', !!on); }
+function renderRouteName(){ var r=activeRoute(); var el=document.getElementById('routeName'); if(el) el.textContent = r ? r.nombre : 'Ruta'; }
+function routeProgress(rid){
+  var stops = (rid===state.routeId) ? STOPS : lsJSON(kStops(rid), []);
+  var log = (rid===state.routeId) ? state.log : lsJSON(kLog(rid), {});
+  var done = 0;
+  stops.forEach(function(s){ var st=(log[s.id]&&log[s.id].status)||'pending'; if(st==='visited'||st==='contacted') done++; });
+  return { done:done, total:stops.length };
+}
+function openRoutesSheet(){ renderRoutesSheet(); showSheet('routesSheet'); }
+function renderRoutesSheet(){
+  var html = '<div class="sheet-title">Rutas de venta</div>'+
+    '<div class="vendedor-row">Registrás visitas como <b>'+esc(state.vendedor)+'</b> <span class="vend-edit" id="vendEdit">cambiar</span></div>';
+  state.routes.forEach(function(r){
+    var p = routeProgress(r.id), active = r.id===state.routeId, pct = p.total ? Math.round(p.done/p.total*100) : 0;
+    html += '<div class="route-item'+(active?' active':'')+'" data-rid="'+esc(r.id)+'">'+
+      '<span class="route-swatch" style="background:'+esc(r.color||'#5C7A56')+'"></span>'+
+      '<div class="route-meta"><div class="route-nom">'+esc(r.nombre)+'</div>'+
+        '<div class="route-sub">'+p.total+' paradas · '+pct+'% visitado</div></div>'+
+      (active?'<span class="route-check">✓</span>':'<span class="list-chevron">›</span>')+
+    '</div>';
+  });
+  html += '<div class="new-route" id="newRouteToggle">＋ Nueva ruta</div>'+
+    '<div id="newRouteForm" style="display:none">'+
+      '<div class="note-label">Nombre de la ruta</div><input class="field-input" id="nrName" placeholder="Ej: Ruta comercial Centro MDP 2" />'+
+      '<div class="note-label">Descripción (opcional)</div><input class="field-input" id="nrDesc" placeholder="Zona / objetivo" />'+
+      '<div class="action-row" style="margin-top:14px"><button class="action-btn action-secondary" id="nrCancel">Cancelar</button><button class="action-btn action-primary" id="nrSave">Crear ruta</button></div>'+
+      '<p class="new-route-hint">Después agregás paradas con el botón ＋ del mapa, o decime a mí que investigue y las cargue.</p>'+
+    '</div>';
+  document.getElementById('routesBody').innerHTML = html;
+  Array.prototype.forEach.call(document.querySelectorAll('#routesSheet .route-item'), function(el){
+    el.addEventListener('click', function(){ switchRoute(el.getAttribute('data-rid')); });
+  });
+  document.getElementById('newRouteToggle').addEventListener('click', function(){
+    var f=document.getElementById('newRouteForm'); f.style.display = f.style.display==='none'?'block':'none';
+    if(f.style.display==='block'){ var n=document.getElementById('nrName'); if(n) n.focus(); }
+  });
+  var nrSave=document.getElementById('nrSave'); if(nrSave) nrSave.addEventListener('click', function(){ doCreateRoute(document.getElementById('nrName').value.trim(), document.getElementById('nrDesc').value.trim()); });
+  var nrCancel=document.getElementById('nrCancel'); if(nrCancel) nrCancel.addEventListener('click', function(){ document.getElementById('newRouteForm').style.display='none'; });
+  document.getElementById('vendEdit').addEventListener('click', function(){
+    var n = window.prompt('¿Con qué nombre registrás tus visitas? (cada vendedor tiene su propio progreso)', state.vendedor);
+    if(n!=null){ setVendedor(n); renderRoutesSheet(); }
+  });
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 function init(){
-  loadAll();
+  bootLocal();
   applyTheme(state.theme);
-  document.getElementById('brandSub').textContent = 'Ruta comercial · ' + new Date().toLocaleDateString('es-AR',{day:'numeric',month:'short'});
+  renderRouteName();
 
   initMap();
   renderProgress(); renderNextBar(); renderList();
@@ -1261,6 +1500,7 @@ function init(){
   document.getElementById('legendBtn').addEventListener('click', function(){ showSheet('legendSheet'); });
   document.getElementById('statsBtn').addEventListener('click', openStats);
   document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('routeSwitch').addEventListener('click', openRoutesSheet);
   document.getElementById('overlay').addEventListener('click', function(){ closeSheets(); });
   Array.prototype.forEach.call(document.querySelectorAll('.sheet-close'), function(btn){ btn.addEventListener('click', function(){ closeSheets(); }); });
 
@@ -1306,6 +1546,12 @@ function init(){
   showGeoBanner(true, 'Activá tu ubicación para ver distancias y guiarte.');
   tryGeolocation(true);
   handleHash();
+
+  // sync con Supabase + polling suave (sync del equipo)
+  window.addEventListener('online', function(){ state.online = true; syncFromServer(); });
+  window.addEventListener('offline', function(){ state.online = false; setSync(false); });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible' && state.online) flushQueue(); });
+  syncFromServer();
 
   // service worker (offline)
   if('serviceWorker' in navigator){
