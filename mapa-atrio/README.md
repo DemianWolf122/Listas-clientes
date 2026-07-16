@@ -44,6 +44,13 @@ Sitio estático. **Root Directory = `mapa-atrio`.**
 - `manifest.webmanifest`, `icon.svg`, `sw.js` — PWA / offline.
 - `vercel.json` — headers de caché (evita servir un SW viejo).
 
+## Kit de venta por comercio
+- **Speech personalizado** por cada comercio, compuesto según rubro, estado web y reputación (reseñas/rating), con el producto de atrıo que le encaja.
+- **📋 Copiar · 🔊 Leer en voz alta (TTS) · 🖥 Modo presentación** (pantalla completa para leerle/mostrarle al cliente).
+- **Plan recomendado** (Presencia / Profesional / Premium + precio) por comercio.
+- **Objeciones frecuentes** con respuestas listas, adaptadas al rubro.
+- **Recordatorio .ics** para el seguimiento y **compartir ficha** (Web Share).
+
 ## Copiloto de recorrido
 - **Score de oportunidad** por comercio (severidad del estado web × alcance por reseñas × prioridad) con chip y filtro **🔥 Oportunidad**.
 - **Optimizador de ruta** (vecino más cercano desde tu ubicación): dibuja el recorrido óptimo y estima **distancia + tiempo caminando**.

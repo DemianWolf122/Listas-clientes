@@ -122,6 +122,24 @@
   #confetti{ position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden; }
   .confetti-bit{ position:absolute; top:-14px; width:9px; height:14px; border-radius:2px; opacity:.95; animation:confFall 1.5s ease-in forwards; }
   @keyframes confFall{ 0%{ transform:translateY(-10px) rotate(0); } 100%{ transform:translateY(104vh) rotate(560deg); } }
+  /* Kit de venta */
+  .kit{ background:linear-gradient(180deg, rgba(92,122,86,.08), rgba(92,122,86,.03)); border:1px solid var(--line); border-radius:14px; padding:12px; margin-top:14px; }
+  .kit-head{ font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--sage-deep); font-weight:700; margin-bottom:7px; }
+  .kit-speech{ font-size:13.5px; line-height:1.5; color:var(--ink); }
+  .kit-actions{ display:flex; gap:7px; margin-top:10px; flex-wrap:wrap; }
+  .kit-btn{ flex:1 1 auto; border:1px solid var(--line); background:var(--paper); color:var(--ink); border-radius:10px; padding:8px 6px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .kit-btn.rec{ border-color:#C0574A; color:#C0574A; }
+  .kit-obj{ margin-top:10px; }
+  .kit-obj summary{ font-size:12.5px; font-weight:600; color:var(--sage-deep); cursor:pointer; }
+  .obj-q{ font-size:12.5px; font-weight:600; color:var(--ink); margin-top:9px; }
+  .obj-a{ font-size:12.5px; color:var(--ink-soft); line-height:1.45; margin-top:2px; }
+  .present{ position:fixed; inset:0; z-index:60; background:var(--sage-deep); display:none; align-items:center; justify-content:center; padding:24px; }
+  .present.show{ display:flex; }
+  .present-card{ max-width:560px; width:100%; position:relative; }
+  .present-close{ position:absolute; right:0; top:-10px; color:rgba(255,255,255,.85); font-size:22px; cursor:pointer; }
+  .present-name{ font-family:'Instrument Serif',serif; font-style:italic; font-size:32px; color:#fff; margin-bottom:16px; }
+  .present-speech{ font-size:23px; line-height:1.5; color:#fff; }
+  .present-read{ margin-top:24px; border:1.5px solid rgba(255,255,255,.5); background:transparent; color:#fff; border-radius:12px; padding:12px 18px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; }
   .head-actions{ display:flex; gap:6px; align-items:center; }
   .icon-btn{
     width:36px; height:36px; border-radius:11px; border:1px solid var(--line);
@@ -490,6 +508,13 @@
 </div>
 
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAction" style="display:none"></button></div>
+
+<div class="present" id="presentModal">
+  <div class="present-card">
+    <span class="present-close" id="presentClose">✕</span>
+    <div class="present-body" id="presentBody"></div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -971,6 +996,120 @@ function downloadOfflineTiles(){
 }
 
 /* ============================================================
+   KIT DE VENTA — speech personalizado · plan · objeciones · recordatorio
+   ============================================================ */
+var PLANS = {
+  presencia:{ n:'Presencia', p:'$160k + $35k/mes' },
+  profesional:{ n:'Profesional', p:'$340k + $60k/mes' },
+  premium:{ n:'Premium', p:'desde $650k' }
+};
+function bizFirst(stop){ return (stop.name||'').split(/[—·(]/)[0].trim(); }
+function rubroKind(stop){
+  var t = ((stop.category||'')+' '+(stop.name||'')).toLowerCase();
+  if(/hotel|hoteler|aloj|hostel|apart|inmobil/.test(t)) return 'aloj';
+  if(/gastro|caf[eé]|resto|restaur|\bbar\b|cerv|panad|pastel|helad|rotiser|pizzer/.test(t)) return 'gastro';
+  if(/vinotec|vino/.test(t)) return 'vino';
+  if(/indument|ropa|joyer|[oó]ptica|reloj|deco|jugueter|librer|calzado|marroquin|tienda|aliment|diet[eé]tic|sin tacc|almac[eé]n/.test(t)) return 'retail';
+  if(/est[eé]tic|peluqu|barber|\bspa\b|u[ñn]as|belleza|salud|odont|dental|kinesi|veterin|fitness|gym|gimnas|pilates|yoga|consultorio/.test(t)) return 'turnos';
+  if(/contab|jur[ií]|abog|escriban|estudio/.test(t)) return 'prof';
+  return 'gen';
+}
+function recommendPlan(stop){
+  var k = rubroKind(stop);
+  if(k==='aloj'||k==='gastro'||k==='vino'||k==='retail'||k==='turnos') return 'profesional';
+  if(k==='prof') return 'presencia';
+  return 'presencia';
+}
+var PRODUCT = {
+  aloj:'una web con motor de reservas propio, para que reserven directo y bajes la comisión de las OTAs',
+  gastro:'una carta digital con pedidos y reservas de mesa online',
+  vino:'un catálogo online para mostrar y vender tus etiquetas',
+  retail:'un catálogo/tienda online con tu stock',
+  turnos:'un sistema de turnos y reservas online para que agenden sin depender del teléfono',
+  prof:'una web profesional que te sume clientes cuando te buscan',
+  gen:'una presencia web propia, hecha por un estudio de acá'
+};
+function obsFor(stop){
+  switch(stop.webKind){
+    case 'none': return 'vi que todavía no tienen una web propia';
+    case 'broken': return 'me di cuenta de que el link a la web que aparece en Google está caído, así que quien te busca no llega a nada tuyo';
+    case 'outdated': return 'vi que la web está bastante desactualizada';
+    case 'social': return 'vi que manejás casi todo por Instagram';
+    case 'active': return 'vi que ya tenés web, pero le falta la parte que más te haría vender';
+    default: return 'quería pasar a mostrarte algo que capaz te suma un montón';
+  }
+}
+function proofFor(stop){
+  if(stop.reviews && stop.rating && stop.reviews>=60 && stop.rating>=4.5)
+    return ' Con '+stop.reviews+' reseñas y '+stop.rating+'★ ya tenés una clientela que te recomienda — sería aprovechar eso para que cuando te googlean caigan en algo tuyo, no en un perfil de terceros.';
+  if(stop.reviews && stop.reviews>=30)
+    return ' Ya tenés '+stop.reviews+' reseñas, así que demanda hay de sobra.';
+  return '';
+}
+function speechFor(stop){
+  var first = bizFirst(stop), k = rubroKind(stop), plan = PLANS[recommendPlan(stop)];
+  return 'Hola! Soy de atrıo, un estudio de diseño de acá de Mar del Plata. Pasé por '+first+' porque '+obsFor(stop)+'.'+proofFor(stop)+
+    ' Lo que hacemos es '+PRODUCT[k]+', y con el plan '+plan.n+' ('+plan.p+') lo dejamos funcionando sin que te tengas que ocupar de nada. '+
+    '¿Tenés unos minutos esta semana para que te muestre un par de ideas concretas, sin compromiso?';
+}
+function objectionsFor(stop){
+  var k = rubroKind(stop);
+  var list = [
+    ['«Ya tengo Instagram»','Buenísimo, eso lo seguís usando. La web es tu casa propia: aparecés en Google, no dependés del alcance de las redes y mostrás todo ordenado en un solo lugar.'],
+    ['«No tengo tiempo»','Lo armamos nosotros de punta a punta; vos solo nos pasás fotos y datos, y en un par de semanas está online.'],
+    ['«¿No es caro?»','Arrancás con lo justo y escalás cuando quieras. Si sumás reservas o pedidos, se paga solo con lo que hoy se pierde por no estar.']
+  ];
+  if(k==='aloj') list.push(['«Ya trabajo con Booking»','Perfecto, seguí. Con reservas directas desde tu web te quedás con la comisión que hoy se lleva la OTA.']);
+  else if(k==='turnos') list.push(['«La gente ya me escribe por WhatsApp»','Sí, y sigue pudiendo. Esto te saca el ida y vuelta, evita superponer turnos y agenda aunque estés cerrado.']);
+  else if(k==='gastro') list.push(['«Uso los pedidos de las apps»','Genial, pero cobran 20-30%. Con pedidos por tu web te quedás con eso y con los datos del cliente.']);
+  else if(k==='retail'||k==='vino') list.push(['«Vendo bien en el local»','Ideal, esto suma: un catálogo online que atiende cuando el local está cerrado y llega a más gente.']);
+  return list;
+}
+
+var _tts = null;
+function readSpeech(text, btn){
+  if(!('speechSynthesis' in window)){ toast('La lectura por voz no está disponible acá'); return; }
+  if(window.speechSynthesis.speaking){ window.speechSynthesis.cancel(); if(btn) btn.classList.remove('rec'); return; }
+  var u = new SpeechSynthesisUtterance(text); u.lang='es-AR'; u.rate=1.02;
+  u.onend = function(){ if(btn) btn.classList.remove('rec'); };
+  if(btn) btn.classList.add('rec');
+  window.speechSynthesis.speak(u);
+}
+function presentSpeech(id){
+  var s = stopById(id); if(!s) return; var sp = speechFor(s);
+  document.getElementById('presentBody').innerHTML =
+    '<div class="present-name">'+esc(bizFirst(s))+'</div>'+
+    '<div class="present-speech">'+esc(sp)+'</div>'+
+    '<button class="present-read" id="presentRead">🔊 Leer en voz alta</button>';
+  document.getElementById('presentRead').addEventListener('click', function(){ readSpeech(sp, this); });
+  document.getElementById('presentModal').classList.add('show');
+}
+function closePresent(){ if(window.speechSynthesis) window.speechSynthesis.cancel(); document.getElementById('presentModal').classList.remove('show'); }
+
+function icsReminder(id){
+  var s = stopById(id), fu = followOf(id); if(!fu){ toast('Poné primero una fecha para volver'); return; }
+  var d = fu.replace(/-/g,'');
+  var title = 'atrıo · Seguir ' + bizFirst(s);
+  var desc = 'Volver a contactar. ' + (s.phoneRaw?('Tel: '+s.phoneRaw+'. '):'') + (s.address||'');
+  var ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//atrio//ruta//ES','CALSCALE:GREGORIAN','BEGIN:VEVENT',
+    'UID:'+(s.pid||('n'+s.id))+'-'+d+'@atrio','DTSTART;VALUE=DATE:'+d,'SUMMARY:'+title,'DESCRIPTION:'+desc.replace(/[\r\n]+/g,' '),
+    'BEGIN:VALARM','TRIGGER:-PT2H','ACTION:DISPLAY','DESCRIPTION:'+title,'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  var blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  var a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='seguimiento-'+bizFirst(s).replace(/\s+/g,'-')+'.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(a.href); },800);
+  toast('Recordatorio agregado (.ics)');
+}
+function shareStop(id){
+  var s = stopById(id);
+  var url = location.origin+location.pathname+'#stop-'+id;
+  var text = bizFirst(s)+' · '+(s.address||'')+(s.phoneRaw?(' · '+s.phoneRaw):'');
+  if(navigator.share){ navigator.share({title:'atrıo · '+bizFirst(s), text:text, url:url}).catch(function(){}); return; }
+  var full = text+' '+url;
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(full).then(function(){ toast('Ficha copiada para compartir'); }, function(){ toast(full); });
+  else toast(full);
+}
+
+/* ============================================================
    MAP
    ============================================================ */
 var map, markers = {}, routeLine, meMarker, meCircle, tileLayer, optLine = null;
@@ -1226,12 +1365,26 @@ function openSheet(id){
   if(stop.email) rows += rowHtml('✉️', '<a href="mailto:'+esc(stop.email)+'">'+esc(stop.email)+'</a>');
   if(stop.rating) rows += rowHtml('⭐', stop.rating.toFixed(1) + '★ · ' + stop.reviews + ' reseñas');
   if(stop.web) rows += rowHtml('🌐', esc(stop.web));
+  rows += rowHtml('💼', 'Plan sugerido: <b>'+PLANS[recommendPlan(stop)].n+'</b> · '+PLANS[recommendPlan(stop)].p);
   if(stop.hook) rows += rowHtml('💡', '<span class="hook">'+esc(stop.hook)+'</span>');
   if(stop.tip) rows += rowHtml('📝', '<span class="hook">'+esc(stop.tip)+'</span>');
   if(sch) rows += rowHtml(sch.kind==='closed'?'⛔':'🕒', '<span class="schedule-badge sch-'+sch.kind+'">'+esc(sch.text)+'</span>');
 
   var wa = stop.phoneRaw ? waHref(stop.phoneRaw, pitchMessage(stop)) : null;
   var mail = mailtoHref(stop);
+
+  var speech = speechFor(stop);
+  var objs = objectionsFor(stop).map(function(o){ return '<div class="obj-q">'+esc(o[0])+'</div><div class="obj-a">'+esc(o[1])+'</div>'; }).join('');
+  var kitHtml = '<div class="kit">'+
+      '<div class="kit-head">🎤 Speech personalizado</div>'+
+      '<div class="kit-speech" id="kitSpeech">'+esc(speech)+'</div>'+
+      '<div class="kit-actions">'+
+        '<button class="kit-btn" id="kitCopy">📋 Copiar</button>'+
+        (('speechSynthesis' in window)?'<button class="kit-btn" id="kitRead">🔊 Leer</button>':'')+
+        '<button class="kit-btn" id="kitPresent">🖥 Presentar</button>'+
+      '</div>'+
+      '<details class="kit-obj"><summary>Objeciones frecuentes</summary>'+objs+'</details>'+
+    '</div>';
 
   var actions = '';
   actions += '<a class="action-btn action-primary" href="'+directionsUrl(stop)+'" target="_blank" rel="noopener">🧭 Cómo llegar</a>';
@@ -1254,6 +1407,7 @@ function openSheet(id){
     '</div>'+
     rows +
     intelHtml(stop) +
+    kitHtml +
     '<div class="status-group">'+
       '<div class="status-label">Estado de la visita</div>'+
       '<div class="status-btns">'+
@@ -1271,8 +1425,12 @@ function openSheet(id){
     '</div>'+
     '<div class="note-label note-label-row">Nota rápida'+(isDictationOn()?'<span class="mic-btn" id="micBtn" title="Dictar por voz">🎤 dictar</span>':'')+'</div>'+
     '<textarea class="note-area" id="noteArea" rows="2" placeholder="Ej: habló con Francisco, volver el jueves…">'+esc(noteOf(id))+'</textarea>'+
-    '<div class="sheet-links"><span class="mini-link" id="moveStop">📍 Mover pin</span>'+
-      (stop.custom ? '<span class="mini-link danger" id="delStop">🗑 Eliminar</span>' : '')+'</div>';
+    '<div class="sheet-links">'+
+      '<span class="mini-link" id="shareStop">🔗 Compartir</span>'+
+      '<span class="mini-link" id="moveStop">📍 Mover pin</span>'+
+      (followOf(id) ? '<span class="mini-link" id="icsStop">📅 Recordatorio</span>' : '')+
+      (stop.custom ? '<span class="mini-link danger" id="delStop">🗑 Eliminar</span>' : '')+
+    '</div>';
 
   document.getElementById('sheetBody').innerHTML = body;
   Array.prototype.forEach.call(document.querySelectorAll('#sheet .status-btn'), function(b){
@@ -1287,6 +1445,11 @@ function openSheet(id){
   if(mv) mv.addEventListener('click', function(){ startMoveMode(id); });
   var mic = document.getElementById('micBtn');
   if(mic) mic.addEventListener('click', function(){ toggleDictation(mic, document.getElementById('noteArea')); });
+  var kc=document.getElementById('kitCopy'); if(kc) kc.addEventListener('click', function(){ var t=speechFor(stop); if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ toast('Speech copiado'); }, function(){ fallbackCopy(t); }); else fallbackCopy(t); });
+  var kr=document.getElementById('kitRead'); if(kr) kr.addEventListener('click', function(){ readSpeech(speechFor(stop), kr); });
+  var kp=document.getElementById('kitPresent'); if(kp) kp.addEventListener('click', function(){ presentSpeech(id); });
+  var sh=document.getElementById('shareStop'); if(sh) sh.addEventListener('click', function(){ shareStop(id); });
+  var ic=document.getElementById('icsStop'); if(ic) ic.addEventListener('click', function(){ icsReminder(id); });
 
   showSheet('sheet');
 }
@@ -1673,6 +1836,8 @@ function init(){
   document.getElementById('routeSwitch').addEventListener('click', openRoutesSheet);
   document.getElementById('overlay').addEventListener('click', function(){ closeSheets(); });
   Array.prototype.forEach.call(document.querySelectorAll('.sheet-close'), function(btn){ btn.addEventListener('click', function(){ closeSheets(); }); });
+  document.getElementById('presentClose').addEventListener('click', closePresent);
+  document.getElementById('presentModal').addEventListener('click', function(e){ if(e.target===this) closePresent(); });
 
   // map fabs
   document.getElementById('fitBtn').addEventListener('click', fitAll);
