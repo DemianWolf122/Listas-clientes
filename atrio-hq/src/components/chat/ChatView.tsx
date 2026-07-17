@@ -21,6 +21,37 @@ import { notify } from "@/lib/actions/log";
 import { playPop } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
+const isNewDay = (current: string, prev?: string): boolean => {
+  if (!prev) return true;
+  const curr = new Date(current).toDateString();
+  const p = new Date(prev).toDateString();
+  return curr !== p;
+};
+
+function DateSeparator({ date }: { date: string }) {
+  const d = new Date(date);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const isToday = d.toDateString() === today.toDateString();
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  const label = isToday
+    ? "Hoy"
+    : isYesterday
+      ? "Ayer"
+      : d.toLocaleDateString("es-AR", { weekday: "long", month: "short", day: "numeric" });
+
+  return (
+    <div className="flex items-center gap-2 py-3 px-2">
+      <div className="h-px flex-1 bg-hairline" />
+      <span className="text-2xs font-medium text-ink-tertiary">{label}</span>
+      <div className="h-px flex-1 bg-hairline" />
+    </div>
+  );
+}
+
 export function ChatView({ channelId }: { channelId: string }) {
   const channel = useChannel(channelId);
   const { data: messages } = useMessages(channelId);
@@ -101,15 +132,18 @@ export function ChatView({ channelId }: { channelId: string }) {
               !!prev &&
               prev.author_id === m.author_id &&
               new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60_000;
+            const showDateSeparator = isNewDay(m.created_at, prev?.created_at);
             return (
-              <MessageItem
-                key={m.id}
-                message={m}
-                channelId={channelId}
-                grouped={grouped}
-                replyCount={repliesByParent[m.id]?.length ?? 0}
-                names={names}
-              />
+              <div key={m.id}>
+                {showDateSeparator && <DateSeparator date={m.created_at} />}
+                <MessageItem
+                  message={m}
+                  channelId={channelId}
+                  grouped={grouped}
+                  replyCount={repliesByParent[m.id]?.length ?? 0}
+                  names={names}
+                />
+              </div>
             );
           })
         )}
