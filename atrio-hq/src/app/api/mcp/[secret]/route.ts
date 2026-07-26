@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import { SCHEMA } from "@/lib/constants";
 import { mcpSecret } from "@/lib/mcp-config";
+import { ROUTINE_AREAS, occursOn, toMin, type RoutineArea } from "@/lib/routine";
 
 /**
  * Servidor MCP de Atrio (Streamable HTTP, stateless) para los conectores
@@ -81,6 +82,47 @@ const PRIORIDADES: Record<string, string> = {
   media: "medium", medium: "medium", alta: "high", high: "high", urgente: "urgent", urgent: "urgent",
 };
 const estadoLabel: Record<string, string> = { todo: "pendiente", in_progress: "en progreso", done: "hecha ✓" };
+
+/* --- rutina: áreas (sub-calendarios) y repetición, en castellano --- */
+const AREAS_RUTINA: Record<string, RoutineArea> = {
+  deep: "deep", dw: "deep", profundo: "deep", "trabajo profundo": "deep", "deep work": "deep", foco: "deep", creativo: "deep",
+  meetings: "meetings", mtg: "meetings", reunion: "meetings", reuniones: "meetings", llamada: "meetings", call: "meetings",
+  admin: "admin", adm: "admin", administrativo: "admin", administrativa: "admin", administrativas: "admin", mails: "admin", tramites: "admin",
+  health: "health", hlth: "health", salud: "health", gimnasio: "health", gym: "health", terapia: "health", descanso: "health",
+  social: "social", soc: "social", personal: "social", pareja: "social", amigos: "social", familia: "social",
+};
+const REPETICIONES: Record<string, string> = {
+  no: "none", none: "none", nunca: "none", "una vez": "none", "no se repite": "none",
+  diario: "daily", diaria: "daily", daily: "daily", "todos los dias": "daily",
+  weekdays: "weekdays", habiles: "weekdays", "dias habiles": "weekdays", "lunes a viernes": "weekdays",
+  weekly: "weekly", semanal: "weekly", "cada semana": "weekly",
+};
+
+function normArea(v?: string | null): RoutineArea {
+  if (!v) return "deep";
+  const a = AREAS_RUTINA[norm(String(v))];
+  if (!a) {
+    throw new Error(
+      `Área inválida: "${v}". Usá: trabajo profundo | reuniones | administrativo | salud | social.`
+    );
+  }
+  return a;
+}
+
+function normRepeticion(v?: string | null): string {
+  if (!v) return "none";
+  const r = REPETICIONES[norm(String(v))];
+  if (!r) throw new Error(`Repetición inválida: "${v}". Usá: no | diario | lunes a viernes | semanal.`);
+  return r;
+}
+
+function lineaBloque(b: any, conId = true) {
+  const meta = ROUTINE_AREAS[(b.area as RoutineArea) ?? "deep"] ?? ROUTINE_AREAS.deep;
+  const hora = `${String(b.start_time).slice(0, 5)}–${String(b.end_time).slice(0, 5)}`;
+  const sigla = [meta.short, b.code].filter(Boolean).join(" | ");
+  const repite = b.repeat_rule && b.repeat_rule !== "none" ? ` · repite: ${b.repeat_rule}` : "";
+  return `${b.done ? "✅" : meta.emoji} ${hora} · ${sigla} · ${b.title}${b.notes ? ` — ${b.notes}` : ""}${repite}${conId ? ` · id:${b.id}` : ""}`;
+}
 
 function normHora(h?: string | null) {
   if (!h) return null;
@@ -223,6 +265,28 @@ const TOOLS = [
   T("etiquetar_tarea", "Agrega o quita etiquetas de una tarea (por nombre).", {
     id: S("id de la tarea"), agregar: { type: "array", items: { type: "string" } }, quitar: { type: "array", items: { type: "string" } },
   }, ["id"]),
+  /* --- rutina (sub-calendarios personales) --- */
+  T("ver_rutina", "La rutina de una persona en un día: bloques de los 5 sub-calendarios (trabajo profundo, reuniones, administrativo, salud, social) ordenados por hora.", {
+    persona: S("Lucila o Demian"), fecha: S("YYYY-MM-DD (default: hoy)"),
+  }, ["persona"]),
+  T("crear_bloque_rutina", "Agenda un bloque en la rutina de alguien. Las áreas tienen su franja: trabajo profundo 10:00–14:00 (máximo foco), reuniones y administrativo a la tarde; salud y social cuando entren.", {
+    persona: S("De quién es la rutina: Lucila o Demian"),
+    titulo: S("Qué se hace en el bloque"),
+    area: S("trabajo profundo | reuniones | administrativo | salud | social"),
+    fecha: S("YYYY-MM-DD"), hora_inicio: S("HH:MM"), hora_fin: S("HH:MM"),
+    sigla: S("Sigla corta del proyecto, ej. ESC (se ve como 'DW | ESC · título')"),
+    notas: S("Detalle opcional"),
+    repetir: S("no | diario | lunes a viernes | semanal (default: no)"),
+    repetir_hasta: S("YYYY-MM-DD hasta cuándo se repite (opcional)"),
+    de: S("Quién lo pide (Lucila o Demian)"),
+  }, ["persona", "titulo", "area", "fecha", "hora_inicio", "hora_fin"]),
+  T("actualizar_bloque_rutina", "Cambia un bloque de rutina por id (horario, área, título, sigla, notas, o marcarlo como hecho).", {
+    id: S("id del bloque"), titulo: S("Nuevo título"), area: S("Nueva área"),
+    fecha: S("YYYY-MM-DD"), hora_inicio: S("HH:MM"), hora_fin: S("HH:MM"),
+    sigla: S("Nueva sigla"), notas: S("Nuevas notas"), hecho: { type: "boolean", description: "true = completado" },
+    repetir: S("no | diario | lunes a viernes | semanal"),
+  }, ["id"]),
+  T("eliminar_bloque_rutina", "Borra un bloque de la rutina. Confirmá antes con el usuario.", { id: S("id del bloque") }, ["id"]),
   /* --- etiquetas --- */
   T("listar_etiquetas", "Lista las etiquetas disponibles con su color."),
   T("crear_etiqueta", "Crea una etiqueta nueva (color pastel automático si no se especifica).", {
@@ -505,6 +569,79 @@ async function ejecutar(name: string, args: any): Promise<string> {
       return `Etiquetas de "${rows[0].title}": ${hechas.join(", ") || "sin cambios"}`;
     }
 
+    /* ------------------------------ rutina ------------------------------ */
+    case "ver_rutina": {
+      const quien = (await perfil(db, args?.persona))!;
+      const fecha = args?.fecha || hoyAR();
+      const todos = chk(await db.from("routine_blocks").select("*").eq("profile_id", quien.id)) ?? [];
+      const delDia = todos
+        .filter((b: any) => occursOn(b, fecha))
+        .sort((a: any, b: any) => toMin(a.start_time) - toMin(b.start_time));
+      if (!delDia.length) return `${quien.name} no tiene bloques de rutina el ${fecha}.`;
+      const horas = delDia.reduce((acc: number, b: any) => acc + (toMin(b.end_time) - toMin(b.start_time)), 0);
+      return [
+        `Rutina de ${quien.name} · ${fecha} (${Math.round((horas / 60) * 10) / 10} h agendadas)`,
+        ...delDia.map((b: any) => lineaBloque(b)),
+      ].join("\n");
+    }
+
+    case "crear_bloque_rutina": {
+      const quien = (await perfil(db, args?.persona))!;
+      const pide = args?.de ? await perfil(db, args.de) : null;
+      const area = normArea(args?.area);
+      const inicio = normHora(args?.hora_inicio);
+      const fin = normHora(args?.hora_fin);
+      if (!args?.fecha) throw new Error("Falta la fecha (YYYY-MM-DD).");
+      if (!inicio || !fin) throw new Error("Faltan hora_inicio y hora_fin (HH:MM).");
+      if (toMin(fin) <= toMin(inicio)) throw new Error("La hora de fin tiene que ser posterior a la de inicio.");
+      const { data, error } = await db.from("routine_blocks").insert({
+        profile_id: quien.id,
+        area,
+        title: args.titulo,
+        code: args.sigla ? String(args.sigla).toUpperCase() : null,
+        notes: args.notas ?? null,
+        date: args.fecha,
+        start_time: inicio,
+        end_time: fin,
+        repeat_rule: normRepeticion(args.repetir),
+        repeat_until: args.repetir_hasta ?? null,
+        created_by: pide?.id ?? quien.id,
+      }).select("*").single();
+      if (error) throw new Error(error.message);
+      const meta = ROUTINE_AREAS[area];
+      const fuera = meta.window && (toMin(inicio) < meta.window[0] || toMin(inicio) >= meta.window[1])
+        ? ` · ⚠️ ojo: ${meta.label.toLowerCase()} rinde entre ${String(Math.floor(meta.window[0] / 60)).padStart(2, "0")}:00 y ${String(Math.floor(meta.window[1] / 60)).padStart(2, "0")}:00`
+        : "";
+      return `Bloque agendado ✓ en la rutina de ${quien.name} · ${args.fecha}\n${lineaBloque(data)}${fuera}`;
+    }
+
+    case "actualizar_bloque_rutina": {
+      if (!args?.id) throw new Error("Falta el id del bloque (usá ver_rutina).");
+      const patch: any = {};
+      if (args.titulo) patch.title = args.titulo;
+      if (args.area) patch.area = normArea(args.area);
+      if (args.fecha) patch.date = args.fecha;
+      if (args.hora_inicio) patch.start_time = normHora(args.hora_inicio);
+      if (args.hora_fin) patch.end_time = normHora(args.hora_fin);
+      if (args.sigla !== undefined) patch.code = args.sigla ? String(args.sigla).toUpperCase() : null;
+      if (args.notas !== undefined) patch.notes = args.notas;
+      if (args.repetir) patch.repeat_rule = normRepeticion(args.repetir);
+      if (args.hecho !== undefined) patch.done = Boolean(args.hecho);
+      if (!Object.keys(patch).length) throw new Error("No mandaste ningún cambio.");
+      const { data, error } = await db.from("routine_blocks").update(patch).eq("id", args.id).select("*").single();
+      if (error) throw new Error(error.message);
+      return `Bloque actualizado ✓\n${lineaBloque(data)}`;
+    }
+
+    case "eliminar_bloque_rutina": {
+      if (!args?.id) throw new Error("Falta el id del bloque.");
+      const previo = chk(await db.from("routine_blocks").select("title").eq("id", args.id).limit(1));
+      if (!previo?.length) throw new Error("No existe ese bloque.");
+      const { error } = await db.from("routine_blocks").delete().eq("id", args.id);
+      if (error) throw new Error(error.message);
+      return `Bloque eliminado 🗑️ "${previo[0].title}"`;
+    }
+
     /* ------------------------------ etiquetas ------------------------------ */
     case "listar_etiquetas": {
       const data = chk(await db.from("tags").select("id,name,color").order("name"));
@@ -739,6 +876,7 @@ async function atender(msg: any): Promise<object | null> {
         instructions:
           "Conector del HQ de Atrio (estudio de diseño de Lucila y Demian, Buenos Aires). " +
           "Opera toda la app: agenda y resumen semanal, tareas (crear, actualizar, eliminar, subtareas, comentarios, etiquetas), " +
+          "rutina personal por bloques en 5 sub-calendarios (trabajo profundo 10–14, reuniones, administrativo, salud, social), " +
           "proyectos, eventos del calendario, documentos (crear/leer/agregar), chat interno y avisos push directos a cada persona. " +
           "Fechas en YYYY-MM-DD y horas HH:MM, siempre en hora de Buenos Aires (UTC-3). " +
           "Antes de eliminar algo, confirmá con el usuario. Cuando el usuario diga 'yo' o 'me', preguntale (o deducí) si es Lucila o Demian y usalo en el campo 'de'. " +
