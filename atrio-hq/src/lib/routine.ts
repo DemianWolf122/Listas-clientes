@@ -202,14 +202,17 @@ export function layoutColumns<T extends Span>(items: T[]): Positioned<T>[] {
   return out;
 }
 
-/** Rango horario visible: se ajusta solo a lo que hay cargado ese día. */
-export function fitRange(spans: Span[], floorH = 7, ceilH = 23): [number, number] {
-  if (!spans.length) return [floorH, ceilH];
+/**
+ * Rango horario visible: se ajusta a lo que hay cargado, con una hora de aire
+ * arriba y abajo. Así la grilla no arrastra madrugadas ni noches vacías.
+ */
+export function fitRange(spans: Span[], fallback: [number, number] = [8, 20]): [number, number] {
+  if (!spans.length) return fallback;
   const first = Math.min(...spans.map((s) => s.startMin));
   const last = Math.max(...spans.map((s) => s.endMin));
-  const start = Math.min(floorH, Math.floor(first / 60));
-  const end = Math.max(ceilH, Math.ceil(last / 60));
-  return [Math.max(0, start), Math.min(24, end)];
+  const start = Math.max(0, Math.floor(first / 60) - 1);
+  const end = Math.min(24, Math.ceil(last / 60) + 1);
+  return [start, Math.max(end, start + 4)];
 }
 
 /** Color con alfa, para tintes de fondo. */
