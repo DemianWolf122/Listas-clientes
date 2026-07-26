@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
+import { format, addDays, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Check, Layers } from "lucide-react";
 import { useProfiles } from "@/hooks/profiles";
@@ -32,7 +32,7 @@ import { timeOfDay, readableText, cn } from "@/lib/utils";
 import type { RoutineBlock } from "@/lib/types/database";
 
 /** alto de una hora en px */
-const HOUR_H = 56;
+const HOUR_H = 48;
 const GUTTER = 52;
 const ymd = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -79,8 +79,9 @@ export function RoutineView() {
 
   const days = useMemo(() => {
     if (view === "day") return [date];
-    const start = startOfWeek(date, { weekStartsOn: 1 });
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    // Ventana móvil de 7 días centrada en el día elegido: el día de hoy queda
+    // en el medio de la grilla y no pegado al borde cuando cae sábado o domingo.
+    return Array.from({ length: 7 }, (_, i) => addDays(date, i - 3));
   }, [view, date]);
 
   /** Bloques de rutina + (opcional) tareas con horario y eventos, por día. */
@@ -178,7 +179,9 @@ export function RoutineView() {
   const rangeLabel =
     view === "day"
       ? format(date, "EEEE d 'de' MMMM", { locale: es })
-      : `${format(days[0], "d")} – ${format(days[6], "d 'de' MMMM", { locale: es })}`;
+      : days[0].getMonth() === days[6].getMonth()
+        ? `${format(days[0], "d")} – ${format(days[6], "d 'de' MMMM", { locale: es })}`
+        : `${format(days[0], "d 'de' MMM", { locale: es })} – ${format(days[6], "d 'de' MMM", { locale: es })}`;
 
   return (
     <div className="flex h-full flex-col">
@@ -398,7 +401,8 @@ function TimeGrid({
 
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-      <div className={cn("relative", week && "min-w-[820px]")}>
+      {/* en vista Día la grilla se centra y se acota: bloques legibles, no barras de punta a punta */}
+      <div className={cn("relative", week ? "min-w-[820px]" : "mx-auto max-w-3xl px-3 sm:px-4")}>
         {/* encabezado de días (solo semana) */}
         {week && (
           <div className="sticky top-0 z-20 flex border-b border-hairline bg-canvas/95 backdrop-blur">
