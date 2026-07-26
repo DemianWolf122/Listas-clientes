@@ -8,6 +8,7 @@ import {
   ListChecks,
   CalendarDays,
   CalendarClock,
+  LayoutGrid,
   Users,
   Plus,
   FileText,
@@ -97,6 +98,9 @@ export function CommandPalette() {
           </Item>
           <Item value="nav-agenda" icon={<CalendarClock size={15} />} onSelect={() => run(() => router.push("/agenda"))}>
             Ir a la Agenda
+          </Item>
+          <Item value="nav-rutina" icon={<LayoutGrid size={15} />} onSelect={() => run(() => router.push("/rutina"))}>
+            Ir a Rutina
           </Item>
           <Item value="nav-agenda-equipo" icon={<Users size={15} />} onSelect={() => run(() => router.push("/agenda-equipo"))}>
             Ir a la Agenda del Equipo

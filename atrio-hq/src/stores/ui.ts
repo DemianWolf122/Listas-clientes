@@ -63,6 +63,14 @@ interface PrefsState {
   toggleSounds: () => void;
   celebrate: boolean;
   toggleCelebrate: () => void;
+
+  /** Rutina: sub-calendarios ocultos por persona (cada uno arma su vista). */
+  routineHidden: Record<string, string[]>;
+  toggleRoutineArea: (profileId: string, area: string) => void;
+  showAllRoutineAreas: (profileId: string) => void;
+  /** Rutina: superponer las tareas con horario y los eventos del equipo. */
+  routineShowAgenda: boolean;
+  toggleRoutineShowAgenda: () => void;
 }
 
 export const usePrefs = create<PrefsState>()(
@@ -72,6 +80,18 @@ export const usePrefs = create<PrefsState>()(
       toggleSounds: () => set((s) => ({ sounds: !s.sounds })),
       celebrate: true,
       toggleCelebrate: () => set((s) => ({ celebrate: !s.celebrate })),
+
+      routineHidden: {},
+      toggleRoutineArea: (profileId, area) =>
+        set((s) => {
+          const current = s.routineHidden[profileId] ?? [];
+          const next = current.includes(area) ? current.filter((a) => a !== area) : [...current, area];
+          return { routineHidden: { ...s.routineHidden, [profileId]: next } };
+        }),
+      showAllRoutineAreas: (profileId) =>
+        set((s) => ({ routineHidden: { ...s.routineHidden, [profileId]: [] } })),
+      routineShowAgenda: true,
+      toggleRoutineShowAgenda: () => set((s) => ({ routineShowAgenda: !s.routineShowAgenda })),
     }),
     { name: "atrio-prefs" }
   )

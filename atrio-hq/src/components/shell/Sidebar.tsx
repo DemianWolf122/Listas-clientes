@@ -8,6 +8,7 @@ import {
   ListChecks,
   CalendarDays,
   CalendarClock,
+  LayoutGrid,
   Users,
   Search,
   Plus,
@@ -100,6 +101,13 @@ function SidebarInner() {
             icon={<CalendarClock size={16} />}
             label="Agenda"
             active={pathname === "/agenda"}
+            onClick={close}
+          />
+          <NavItem
+            href="/rutina"
+            icon={<LayoutGrid size={16} />}
+            label="Rutina"
+            active={isActive("/rutina")}
             onClick={close}
           />
           <NavItem

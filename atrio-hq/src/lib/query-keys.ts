@@ -20,6 +20,7 @@ export const qk = {
   doc: (id: string) => ["doc", id] as const,
   comments: (targetType: string, targetId: string) => ["comments", targetType, targetId] as const,
   events: ["events"] as const,
+  routine: (profileId: string) => ["routine", profileId] as const,
   notifications: ["notifications"] as const,
   activity: ["activity"] as const,
   home: ["home"] as const,
@@ -39,6 +40,7 @@ export const INVALIDATION_MAP: Record<string, string[][]> = {
   comments: [["comments"], ["activity"]],
   docs: [["docs"], ["doc"], ["search"]],
   events: [["events"], ["home"]],
+  routine_blocks: [["routine"]],
   notifications: [["notifications"]],
   activity: [["activity"], ["home"]],
 };

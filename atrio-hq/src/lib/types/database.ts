@@ -341,6 +341,46 @@ export interface Database {
         Update: Partial<Database["atrio_agenda"]["Tables"]["activity"]["Insert"]>;
         Relationships: [];
       };
+      routine_blocks: {
+        Row: {
+          id: string;
+          profile_id: string;
+          area: string;
+          code: string | null;
+          title: string;
+          notes: string | null;
+          date: string;
+          start_time: string;
+          end_time: string;
+          done: boolean;
+          task_id: string | null;
+          repeat_rule: string;
+          repeat_until: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          area?: string;
+          code?: string | null;
+          title: string;
+          notes?: string | null;
+          date: string;
+          start_time: string;
+          end_time: string;
+          done?: boolean;
+          task_id?: string | null;
+          repeat_rule?: string;
+          repeat_until?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["atrio_agenda"]["Tables"]["routine_blocks"]["Insert"]>;
+        Relationships: [];
+      };
       push_subscriptions: {
         Row: {
           id: string;
@@ -387,6 +427,8 @@ export type ChannelRead = T["channel_reads"]["Row"];
 export type Doc = T["docs"]["Row"];
 export type Comment = T["comments"]["Row"];
 export type CalEvent = T["events"]["Row"];
+export type RoutineBlock = T["routine_blocks"]["Row"];
+export type RoutineBlockInsert = T["routine_blocks"]["Insert"];
 export type Notification = T["notifications"]["Row"];
 export type Activity = T["activity"]["Row"];
 
