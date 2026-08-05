@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Smile, Reply, Pin, MoreHorizontal, Trash2, Pencil, CheckSquare } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -47,6 +47,9 @@ export function MessageItem({
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.body ?? "");
+  // En touch la barra de acciones arranca plegada y se abre con el botón "…".
+  const [tools, setTools] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
   const author = message.author_id ? profileMap[message.author_id] : undefined;
   const isMine = message.author_id === me;
   const pending = message.id.startsWith("temp-");
@@ -59,7 +62,23 @@ export function MessageItem({
   function toggleReaction(emoji: string) {
     const mine = reactionGroups[emoji]?.includes(me ?? "");
     react.mutate({ messageId: message.id, channelId, emoji, on: !mine });
+    setTools(false);
   }
+
+  // Tocar fuera del mensaje pliega la barra. Los popovers de Radix (emojis y
+  // menú) viven en un portal, así que no cuentan como "fuera".
+  useEffect(() => {
+    if (!tools) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (rowRef.current?.contains(target)) return;
+      if (target.closest("[data-radix-popper-content-wrapper]")) return;
+      setTools(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [tools]);
 
   function saveEdit() {
     if (draft.trim() && draft !== message.body) edit.mutate({ id: message.id, channelId, body: draft.trim() });
@@ -68,6 +87,7 @@ export function MessageItem({
 
   return (
     <div
+      ref={rowRef}
       className={cn(
         "group relative flex gap-2.5 rounded-lg px-2 transition-colors hover:bg-surface/60",
         grouped ? "py-0.5" : "mt-3 py-0.5"
@@ -164,9 +184,28 @@ export function MessageItem({
         ) : null}
       </div>
 
-      {/* toolbar hover */}
+      {/* disparador de la barra (solo touch: en desktop se usa el hover).
+          Va en el flujo del row, no absoluto, para no taparle texto al mensaje. */}
       {!pending && !editing && (
-        <div className="touch-reveal-flex absolute -top-3 right-2 items-center gap-0.5 rounded-lg border border-hairline bg-canvas p-0.5 shadow-popover">
+        <button
+          onClick={() => setTools((v) => !v)}
+          aria-label="Acciones del mensaje"
+          aria-expanded={tools}
+          className={cn(
+            "msg-trigger mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center self-start rounded-md transition-colors",
+            tools ? "bg-surface-active text-ink" : "text-ink-tertiary/60"
+          )}
+        >
+          <MoreHorizontal size={15} />
+        </button>
+      )}
+
+      {/* barra de acciones: hover en desktop, plegable en touch */}
+      {!pending && !editing && (
+        <div
+          data-open={tools}
+          className="msg-tools absolute -top-3 right-2 items-center gap-0.5 rounded-lg border border-hairline bg-canvas p-0.5 shadow-popover"
+        >
           {QUICK_REACTIONS.slice(0, 3).map((e) => (
             <button key={e} onClick={() => toggleReaction(e)} className="flex h-6 w-6 items-center justify-center rounded-md text-sm hover:bg-surface-hover">
               {e}
@@ -179,12 +218,18 @@ export function MessageItem({
           </EmojiPicker>
           {!inThread && (
             <Tooltip content="Responder en hilo">
-              <button className="icon-btn h-6 w-6" onClick={() => openThread(message.id)}>
+              <button
+                className="icon-btn h-6 w-6"
+                onClick={() => {
+                  openThread(message.id);
+                  setTools(false);
+                }}
+              >
                 <Reply size={14} />
               </button>
             </Tooltip>
           )}
-          <Menu>
+          <Menu onOpenChange={(open) => !open && setTools(false)}>
             <MenuTrigger asChild>
               <button className="icon-btn h-6 w-6">
                 <MoreHorizontal size={14} />

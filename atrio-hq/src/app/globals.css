@@ -590,6 +590,25 @@ body {
   }
 }
 
+/* Barra de acciones de un mensaje del chat (reacciones, responder, menú).
+   En desktop aparece al pasar el mouse. En touch no hay hover, así que queda
+   plegada hasta que se toca el botón de acciones: si no, se muestra fija en
+   todos los mensajes y les tapa el texto. */
+.msg-tools {
+  display: none;
+}
+.msg-tools[data-open="true"] {
+  display: flex;
+}
+@media (hover: hover) and (pointer: fine) {
+  .msg-trigger {
+    display: none;
+  }
+  .group:hover .msg-tools {
+    display: flex;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
