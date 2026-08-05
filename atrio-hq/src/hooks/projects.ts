@@ -22,6 +22,22 @@ export function useProjects() {
   });
 }
 
+/** Los archivados, para poder verlos y recuperarlos desde el listado. */
+export function useArchivedProjects() {
+  return useQuery({
+    queryKey: [...qk.projects, "archived"],
+    queryFn: async (): Promise<Project[]> => {
+      const { data, error } = await supabaseBrowser()
+        .from("projects")
+        .select("*")
+        .eq("archived", true)
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useProject(id?: string) {
   return useQuery({
     queryKey: id ? qk.project(id) : ["project", "none"],
@@ -96,6 +112,71 @@ export function useUpdateProject() {
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: qk.projects });
       qc.invalidateQueries({ queryKey: qk.project(v.id) });
+    },
+  });
+}
+
+/**
+ * Archiva un proyecto: desaparece de la barra lateral y del listado, pero no se
+ * pierde nada. Es el paso previo recomendado antes de eliminar.
+ */
+export function useArchiveProject() {
+  const qc = useQueryClient();
+  const me = useIdentity((s) => s.profileId);
+  return useMutation({
+    mutationFn: async ({ id, name, archived }: { id: string; name: string; archived: boolean }) => {
+      const { error } = await supabaseBrowser().from("projects").update({ archived }).eq("id", id);
+      if (error) throw error;
+      await logActivity({
+        actor_id: me,
+        verb: archived ? "archived" : "unarchived",
+        target_type: "project",
+        target_id: id,
+        project_id: id,
+        metadata: { name },
+      });
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(v.id) });
+      qc.invalidateQueries({ queryKey: qk.home });
+      qc.invalidateQueries({ queryKey: qk.activity });
+    },
+  });
+}
+
+/**
+ * Elimina un proyecto para siempre. Sus tareas y secciones se van con él
+ * (cascade en la FK); los canales, docs y eventos asociados sobreviven y
+ * simplemente quedan sin proyecto (set null). La actividad se registra ANTES
+ * del delete, porque `activity.project_id` referencia al proyecto.
+ */
+export function useDeleteProject() {
+  const qc = useQueryClient();
+  const me = useIdentity((s) => s.profileId);
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await logActivity({
+        actor_id: me,
+        verb: "deleted",
+        target_type: "project",
+        target_id: id,
+        project_id: id,
+        metadata: { name },
+      });
+      const { error } = await supabaseBrowser().from("projects").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(v.id) });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: qk.allTasks });
+      qc.invalidateQueries({ queryKey: qk.myTasks });
+      qc.invalidateQueries({ queryKey: qk.channels });
+      qc.invalidateQueries({ queryKey: qk.events });
+      qc.invalidateQueries({ queryKey: qk.home });
+      qc.invalidateQueries({ queryKey: qk.activity });
     },
   });
 }

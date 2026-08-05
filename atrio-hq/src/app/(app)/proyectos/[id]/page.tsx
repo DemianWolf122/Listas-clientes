@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { List, Columns3, CalendarDays, Plus, MessageSquare } from "lucide-react";
+import { List, Columns3, CalendarDays, Plus, MessageSquare, MoreHorizontal, Trash2, Archive } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useProject } from "@/hooks/projects";
+import { toast } from "sonner";
+import { useProject, useArchiveProject } from "@/hooks/projects";
 import { useChannels } from "@/hooks/chat";
 import { useUI } from "@/stores/ui";
 import { useAnnounceViewing } from "@/components/providers/PresenceProvider";
@@ -15,6 +16,8 @@ import { Board } from "@/components/tasks/Board";
 import { TaskListView } from "@/components/tasks/TaskListView";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/Menu";
+import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 
 type View = "list" | "board" | "cal";
 
@@ -25,7 +28,9 @@ export default function ProjectPage() {
   const { data: project, isLoading } = useProject(id);
   const { data: channels } = useChannels();
   const openPeek = useUI((s) => s.openPeek);
+  const archive = useArchiveProject();
   const [view, setView] = useState<View>("board");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useAnnounceViewing(project ? `el proyecto ${project.name}` : null);
 
@@ -67,6 +72,29 @@ export default function ProjectPage() {
         <Button variant="primary" size="sm" onClick={() => openPeek({ kind: "new-task", projectId: id })}>
           <Plus size={15} /> Tarea
         </Button>
+        <Menu>
+          <MenuTrigger asChild>
+            <button className="icon-btn" aria-label="Opciones del proyecto">
+              <MoreHorizontal size={17} />
+            </button>
+          </MenuTrigger>
+          <MenuContent>
+            <MenuItem
+              onSelect={async () => {
+                if (!project) return;
+                await archive.mutateAsync({ id: project.id, name: project.name, archived: true });
+                toast.success(`“${project.name}” archivado`);
+                router.push("/proyectos");
+              }}
+            >
+              <Archive size={14} /> Archivar proyecto
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem danger onSelect={() => setDeleteOpen(true)}>
+              <Trash2 size={14} /> Eliminar proyecto
+            </MenuItem>
+          </MenuContent>
+        </Menu>
       </header>
 
       <div className="min-h-0 flex-1 overflow-hidden">
@@ -74,6 +102,8 @@ export default function ProjectPage() {
         {view === "list" && <div className="h-full overflow-y-auto"><TaskListView projectId={id} /></div>}
         {view === "cal" && <CalendarView projectId={id} />}
       </div>
+
+      <DeleteProjectDialog open={deleteOpen} onOpenChange={setDeleteOpen} project={project ?? null} />
     </div>
   );
 }
