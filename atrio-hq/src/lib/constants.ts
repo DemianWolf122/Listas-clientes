@@ -32,8 +32,8 @@ export const PASTELS = [
   "#E9E9E7",
 ] as const;
 
-/** emojis frecuentes para reacciones rápidas */
-export const QUICK_REACTIONS = ["👍", "❤️", "😂", "🎉", "🙌", "🔥", "👀", "✅"];
+/** emojis frecuentes para reacciones rápidas (los 4 primeros van sueltos en la barra) */
+export const QUICK_REACTIONS = ["👍", "❤️", "😂", "🐸", "🎉", "🙌", "🔥", "👀", "✅"];
 
 /** set curado para el picker de íconos (proyectos, canales, docs) */
 export const ICON_EMOJIS = [
@@ -41,11 +41,12 @@ export const ICON_EMOJIS = [
   "💬", "💛", "💙", "💚", "❤️", "🧡", "💜", "🩵", "✨", "⭐",
   "🚀", "⚡", "🔥", "🎯", "🎨", "🖌️", "🖍️", "✏️", "🧠", "💡",
   "🌿", "🌱", "🌸", "🌼", "🌻", "🌵", "🍃", "🪴", "🌊", "🏔️",
+  "🐸", "🐢", "🦎", "🐝", "🦋", "🐌", "🐞", "🪷", "🍄", "🌙",
   "🏛️", "🏠", "🛠️", "⚙️", "🧩", "🔧", "📦", "🛍️", "🛒", "💼",
   "☕", "🍵", "🥐", "🎵", "📷", "🎬", "📚", "🔮", "🗺️", "🧭",
 ];
 
-export const STATUS_EMOJIS = ["🎨", "☕", "🔴", "🟢", "🧠", "🎧", "🍵", "🏃", "😴", "🌙", "💻", "📞"];
+export const STATUS_EMOJIS = ["🎨", "☕", "🔴", "🟢", "🧠", "🎧", "🍵", "🏃", "😴", "🌙", "💻", "📞", "🐸"];
 
 /** estados de presencia (Discord-like) */
 export const PRESENCE = {
