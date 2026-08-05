@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import { useProjects } from "@/hooks/projects";
+import { Plus, Archive, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import { useProjects, useArchivedProjects, useArchiveProject } from "@/hooks/projects";
 import { useAllTasks } from "@/hooks/tasks";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -13,7 +14,9 @@ import { NewProjectDialog } from "@/components/projects/NewProjectDialog";
 export default function ProjectsIndex() {
   const router = useRouter();
   const { data: projects, isLoading } = useProjects();
+  const { data: archived } = useArchivedProjects();
   const { data: tasks } = useAllTasks();
+  const archive = useArchiveProject();
   const [newOpen, setNewOpen] = useState(false);
 
   function counts(projectId: string) {
@@ -84,6 +87,41 @@ export default function ProjectsIndex() {
               );
             })}
           </div>
+        )}
+
+        {/* archivados: no se pierden, se recuperan de a un toque */}
+        {(archived ?? []).length > 0 && (
+          <details className="mt-8">
+            <summary className="flex cursor-pointer items-center gap-2 px-1 py-1 text-2xs font-semibold uppercase tracking-wide text-ink-tertiary transition-colors hover:text-ink-secondary">
+              <Archive size={13} />
+              Archivados
+              <span className="tnum">({archived!.length})</span>
+            </summary>
+            <div className="mt-2 space-y-1">
+              {archived!.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2.5 rounded-lg border border-hairline bg-canvas px-3 py-2"
+                >
+                  <span className="text-lg opacity-60">{p.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-medium text-ink-secondary">{p.name}</div>
+                    {p.client_name && <div className="truncate text-2xs text-ink-tertiary">{p.client_name}</div>}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      await archive.mutateAsync({ id: p.id, name: p.name, archived: false });
+                      toast.success(`“${p.name}” restaurado`);
+                    }}
+                  >
+                    <RotateCcw size={14} /> Restaurar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </details>
         )}
       </div>
       <NewProjectDialog open={newOpen} onOpenChange={setNewOpen} />
