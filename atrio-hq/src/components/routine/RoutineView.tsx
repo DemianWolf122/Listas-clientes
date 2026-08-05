@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, addDays, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Check, Layers } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Check, Layers, EyeOff } from "lucide-react";
 import { useProfiles } from "@/hooks/profiles";
 import { useIdentity } from "@/stores/identity";
 import { usePrefs } from "@/stores/ui";
@@ -151,19 +151,27 @@ export function RoutineView() {
   const allItems = useMemo(() => Object.values(itemsByDay).flat(), [itemsByDay]);
   const [fromH, toH] = useMemo(() => fitRange(allItems), [allItems]);
 
-  /** Horas por área en el rango visible: el balance real de la semana/día. */
+  /**
+   * Horas y cantidad de bloques por área en el rango visible. Se calcula sobre
+   * TODAS las áreas, también las filtradas: así el chip apagado sigue mostrando
+   * que ahí abajo hay algo, en vez de esconderlo sin dejar rastro.
+   */
   const totals = useMemo(() => {
-    const acc: Partial<Record<RoutineArea, number>> = {};
+    const acc: Partial<Record<RoutineArea, { mins: number; count: number }>> = {};
     for (const day of days) {
       for (const b of blocks ?? []) {
+        if (!occursOn(b, ymd(day))) continue;
         const area = areaOf(b.area);
-        if (hidden.has(area) || !occursOn(b, ymd(day))) continue;
-        acc[area] = (acc[area] ?? 0) + (toMin(b.end_time) - toMin(b.start_time));
+        const prev = acc[area] ?? { mins: 0, count: 0 };
+        acc[area] = { mins: prev.mins + (toMin(b.end_time) - toMin(b.start_time)), count: prev.count + 1 };
       }
     }
     return acc;
-  }, [days, blocks, hidden]);
-  const totalMin = Object.values(totals).reduce((a, b) => a + b, 0);
+  }, [days, blocks]);
+
+  const totalMin = AREA_ORDER.filter((a) => !hidden.has(a)).reduce((sum, a) => sum + (totals[a]?.mins ?? 0), 0);
+  /** Bloques que el filtro está escondiendo ahora mismo. */
+  const hiddenCount = AREA_ORDER.filter((a) => hidden.has(a)).reduce((sum, a) => sum + (totals[a]?.count ?? 0), 0);
 
   function newBlock(dayStr: string, start: string) {
     setEditing(null);
@@ -256,25 +264,34 @@ export function RoutineView() {
         {AREA_ORDER.map((a) => {
           const meta = ROUTINE_AREAS[a];
           const on = !hidden.has(a);
-          const mins = totals[a] ?? 0;
+          const { mins = 0, count = 0 } = totals[a] ?? {};
           return (
             <button
               key={a}
               onClick={() => profileId && toggleRoutineArea(profileId, a)}
-              title={meta.hint}
+              title={on ? meta.hint : `${meta.label}: oculto. Tocá para volver a mostrarlo.`}
+              aria-pressed={on}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-all",
-                on ? "border-transparent text-ink" : "border-hairline text-ink-tertiary hover:bg-surface-hover"
+                on ? "border-transparent text-ink" : "border-dashed border-hairline-strong text-ink-tertiary hover:bg-surface-hover"
               )}
               style={on ? { background: tint(meta.color, 0.18), boxShadow: `inset 0 0 0 1px ${tint(meta.color, 0.45)}` } : undefined}
             >
+              {/* apagado: círculo hueco, para que se lea de un vistazo que está filtrado */}
               <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full transition-opacity"
-                style={{ background: meta.color, opacity: on ? 1 : 0.35 }}
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={on ? { background: meta.color } : { boxShadow: `inset 0 0 0 1.5px ${meta.color}`, opacity: 0.55 }}
               />
-              <span className="hidden sm:inline">{meta.label}</span>
-              <span className="sm:hidden">{meta.short}</span>
-              {on && mins > 0 && <span className="tnum text-2xs text-ink-secondary">{durationLabel(0, mins)}</span>}
+              <span className={cn(!on && "line-through decoration-1")}>
+                <span className="hidden sm:inline">{meta.label}</span>
+                <span className="sm:hidden">{meta.short}</span>
+              </span>
+              {mins > 0 && (
+                <span className={cn("tnum text-2xs", on ? "text-ink-secondary" : "text-ink-tertiary")}>
+                  {durationLabel(0, mins)}
+                </span>
+              )}
+              {!on && count > 0 && <EyeOff size={11} className="shrink-0 opacity-70" />}
             </button>
           );
         })}
@@ -297,6 +314,22 @@ export function RoutineView() {
           + Agenda
         </button>
       </div>
+
+      {/* Aviso honesto: si el filtro está escondiendo bloques, se dice y se
+          ofrece el deshacer. Antes desaparecían sin dejar rastro. */}
+      {hiddenCount > 0 && (
+        <button
+          onClick={() => profileId && showAllRoutineAreas(profileId)}
+          className="flex w-full items-center gap-2 border-b border-hairline bg-priority-high/10 px-4 py-2 text-left text-2xs text-ink-secondary transition-colors hover:bg-priority-high/20 sm:px-6"
+        >
+          <EyeOff size={13} className="shrink-0 text-priority-high" />
+          <span className="min-w-0 flex-1">
+            {hiddenCount === 1 ? "Hay 1 bloque escondido" : `Hay ${hiddenCount} bloques escondidos`} por el filtro de
+            sub-calendarios.
+          </span>
+          <span className="shrink-0 font-semibold text-ink underline">Mostrar todos</span>
+        </button>
+      )}
 
       {/* ---------- grilla ---------- */}
       {isLoading ? (
