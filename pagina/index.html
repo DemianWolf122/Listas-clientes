@@ -144,8 +144,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="https://wjxekfxyxrfvmsfbqvsj.supabase.co";
-const SUPABASE_KEY="sb_publishable_4Asc-X1Wrs2FI1QAvi7FuA_SuSXbCMJ";
+// Mudanza 2026-09-23: los leads pasaron del proyecto Wepairr al proyecto lead-hunter.
+const SUPABASE_URL="https://pkkxjqhhkvsibhftlmbx.supabase.co";
+const SUPABASE_KEY="sb_publishable_ZD3mFiWXdxHvL9Hw9b43lw_xqXx8O8S";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const el=id=>document.getElementById(id);
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
