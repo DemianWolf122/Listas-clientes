@@ -10,7 +10,7 @@ Es un sitio **estático** (un `index.html` + PWA) con backend **Supabase** para 
 ## Multi-ruta + Supabase
 - Soporta **varias rutas de venta**. La primera es **"Ruta comercial Centro Mar del Plata 1"** (19 comercios).
 - **Selector de rutas** en el header (tocá el nombre de la ruta ▾): cambiar de ruta, ver progreso de cada una, **crear rutas nuevas**.
-- **Backend:** proyecto Supabase *Wepairr* (`wjxekfxyxrfvmsfbqvsj`), en un **schema aislado `atrio_rutas`**
+- **Backend:** proyecto Supabase *lead-hunter* (`pkkxjqhhkvsibhftlmbx`; mudado desde Wepairr el 2026-09-23), en un **schema aislado `atrio_rutas`**
   (no toca `atrio_agenda`, `public`/wepairr ni `jardin`). Tablas: `rutas`, `paradas`, `visitas` (con RLS + realtime).
 - **Progreso por vendedor:** cada persona registra sus visitas con su nombre (`visitas.vendedor`), así no se pisan.
 - **Offline-first:** todo cachea en `localStorage` por ruta; los cambios sin red se encolan y se sincronizan al reconectar.

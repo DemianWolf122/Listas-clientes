@@ -662,10 +662,11 @@ function stopById(id){ for(var i=0;i<STOPS.length;i++){ if(STOPS[i].id===id) ret
 /* ============================================================
    STORAGE — localStorage (con fallback al storage de artifacts)
    ============================================================ */
-/* --- Supabase (proyecto Wepairr · schema aislado atrio_rutas) --- */
+/* --- Supabase (proyecto lead-hunter · schema aislado atrio_rutas).
+   Mudanza 2026-09-23: las rutas pasaron del proyecto Wepairr a lead-hunter. --- */
 var SB = {
-  url:'https://wjxekfxyxrfvmsfbqvsj.supabase.co',
-  key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqeGVrZnh5eHJmdm1zZmJxdnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NjE3NTQsImV4cCI6MjA4NzQzNzc1NH0.sP6iaceCWaKvCFgVMlosJ7pYTfa38oa_2AqmFzSdaDo',
+  url:'https://pkkxjqhhkvsibhftlmbx.supabase.co',
+  key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBra3hqcWhoa3ZzaWJoZnRsbWJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDYxMzEsImV4cCI6MjA5NDUyMjEzMX0.YPqwyMNnyxSpP40nbIrx-KTW6G3PduUV2mUCfG-MA7g',
   schema:'atrio_rutas'
 };
 var SEED_ROUTE = { id:'a1a1a1a1-0000-4000-8000-000000000001', nombre:'Ruta comercial Centro Mar del Plata 1', ciudad:'Mar del Plata', color:'#5C7A56', orden:1 };
